@@ -1,180 +1,135 @@
-"use client";
-
-import { useState } from "react";
+'use client';
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 
-export default function BorrowModal({ book }: { book: any }) {
+// Kita tambahkan 'userEmail' ke dalam Props
+export default function BorrowModal({ book, userEmail }: { book: any, userEmail: string }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    nip: "",
-    days: 7,
+  // Ambil nama depan dari email untuk default nama (contoh: pembinaan@gmail.com -> pembinaan)
+  const autoName = userEmail.split('@')[0];
+
+  const [formData, setFormData] = useState({ 
+    name: autoName, // Otomatis terisi nama akun
+    nip: "", 
+    days: 7 
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleBorrow = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMsg("");
 
     try {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + formData.days);
 
-      const { error: loanError } = await supabase.from("loans").insert([
-        {
-          book_id: book.id,
-          employee_name: formData.name,
-          employee_nip: formData.nip,
-          due_date: dueDate.toISOString().split("T")[0],
-          status: "Dipinjam",
-        },
-      ]);
+      // Simpan ke database menggunakan nama otomatis
+      await supabase.from("loans").insert([{
+        book_id: book.id,
+        employee_name: formData.name, // Ini sekarang sinkron dengan nama login
+        employee_nip: formData.nip,
+        due_date: dueDate.toISOString().split("T")[0],
+        status: "Dipinjam",
+      }]);
 
-      if (loanError) throw loanError;
-
-      const { error: bookError } = await supabase
-        .from("books")
-        .update({ stock: book.stock - 1 })
-        .eq("id", book.id);
-
-      if (bookError) throw bookError;
+      await supabase.from("books").update({ stock: book.stock - 1 }).eq("id", book.id);
 
       setIsSuccess(true);
       router.refresh();
-
       setTimeout(() => {
         setIsOpen(false);
         setIsSuccess(false);
-        setFormData({ name: "", nip: "", days: 7 });
+        setFormData({ name: autoName, nip: "", days: 7 });
       }, 2000);
-
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      setErrorMsg("Gagal meminjam buku. Coba lagi.");
+      alert("Gagal memproses pinjaman.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
+        
+        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">Konfirmasi Pinjaman</h3>
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">Kejaksaan Republik Indonesia</p>
+          </div>
+          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-rose-600 font-bold transition-all">✕</button>
+        </div>
+
+        <div className="p-8">
+          {isSuccess ? (
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">✓</div>
+              <h4 className="text-2xl font-black text-slate-800">Selesai!</h4>
+              <p className="text-sm font-medium text-slate-500 mt-2">Buku berhasil dicatat atas nama <span className="font-bold text-slate-800">{formData.name}</span>.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleBorrow} className="space-y-6">
+              <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex gap-4 items-center">
+                <div className="w-10 h-14 bg-[#1B4332] rounded flex-shrink-0 flex items-center justify-center text-white text-lg">📖</div>
+                <div>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Aset Referensi</p>
+                  <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-1">{book.title}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Peminjam (Otomatis)</label>
+                  <input readOnly type="text" className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm text-slate-500 cursor-not-allowed" value={formData.name} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">NIP Pegawai</label>
+                  <input required type="text" placeholder="Wajib diisi..." className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#1B4332] focus:ring-1 focus:ring-[#1B4332] rounded-xl outline-none transition-all font-bold text-sm text-slate-800" value={formData.nip} onChange={(e) => setFormData({...formData, nip: e.target.value})} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Durasi</label>
+                  <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#1B4332] rounded-xl outline-none font-bold text-sm text-slate-800" value={formData.days} onChange={(e) => setFormData({...formData, days: Number(e.target.value)})}>
+                    <option value={7}>7 Hari (Standar)</option>
+                    <option value={14}>14 Hari (Lama)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onClick={() => setIsOpen(false)} className="px-6 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all border border-slate-200">Batal</button>
+                <button type="submit" disabled={isLoading} className="flex-1 bg-[#1B4332] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#143628] transition-all disabled:opacity-50">
+                  {isLoading ? "Memproses..." : "Konfirmasi & Pinjam"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
         disabled={book.stock === 0}
-        className="w-full bg-[#1B4332] text-white px-4 py-3 rounded-xl font-semibold text-sm hover:bg-[#122c21] active:scale-[0.98] disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-sm"
+        className="w-full bg-slate-900 text-white px-4 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 transition-all shadow-md"
       >
-        {book.stock > 0 ? "Pinjam Buku" : "Kosong"}
+        {book.stock > 0 ? "Pinjam Buku Fisik" : "Stok Sedang Kosong"}
       </button>
 
-      {/* OVERLAY MODAL - Z-index diset sangat tinggi (999) agar menutupi semuanya */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity">
-          
-          {/* KONTEN MODAL - Animasi muncul dari bawah di HP, dan di tengah pada Desktop */}
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all max-h-[90vh] flex flex-col animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200">
-            
-            {/* Header Modal - Super Clean */}
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur sticky top-0 z-10">
-              <h3 className="font-bold text-gray-900">Form Peminjaman</h3>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Body Modal - Bisa di-scroll jika layar HP pendek */}
-            <div className="p-6 overflow-y-auto">
-              {isSuccess ? (
-                <div className="text-center py-10">
-                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-green-100">
-                    <span className="text-4xl text-green-600">✓</span>
-                  </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Berhasil!</h4>
-                  <p className="text-gray-500 text-sm">Buku telah dicatat atas nama Anda.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleBorrow} className="space-y-5">
-                  {/* Info Buku */}
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100/80">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Buku yang dipilih</p>
-                    <p className="font-bold text-gray-900 text-sm leading-snug line-clamp-2">{book.title}</p>
-                  </div>
-
-                  {errorMsg && (
-                    <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100">
-                      {errorMsg}
-                    </div>
-                  )}
-
-                  {/* Input Fields - Diperbesar agar mudah disentuh di HP */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 ml-1">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 border border-transparent focus:bg-white rounded-xl focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] outline-none transition-all placeholder:text-gray-400 text-sm"
-                      placeholder="Masukkan nama Anda"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 ml-1">NIP (Pegawai)</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 border border-transparent focus:bg-white rounded-xl focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] outline-none transition-all placeholder:text-gray-400 text-sm"
-                      placeholder="Contoh: 1980..."
-                      value={formData.nip}
-                      onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 ml-1">Durasi Pinjam</label>
-                    <select
-                      className="w-full px-4 py-3 bg-gray-50 border border-transparent focus:bg-white rounded-xl focus:ring-2 focus:ring-[#1B4332]/20 focus:border-[#1B4332] outline-none transition-all text-sm appearance-none"
-                      value={formData.days}
-                      onChange={(e) => setFormData({ ...formData, days: Number(e.target.value) })}
-                    >
-                      <option value={3}>3 Hari</option>
-                      <option value={7}>7 Hari (Standar)</option>
-                      <option value={14}>14 Hari</option>
-                    </select>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="pt-2 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsOpen(false)}
-                      className="w-1/3 px-4 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-2/3 px-4 py-3 bg-[#1B4332] text-white rounded-xl font-semibold hover:bg-[#122c21] disabled:opacity-70 disabled:cursor-not-allowed transition-colors text-sm shadow-md shadow-[#1B4332]/20"
-                    >
-                      {isLoading ? "Memproses..." : "Konfirmasi"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {mounted && isOpen ? createPortal(modalContent, document.body) : null}
     </>
   );
 }

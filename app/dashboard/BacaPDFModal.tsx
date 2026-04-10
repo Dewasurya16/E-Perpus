@@ -10,54 +10,65 @@ export default function BacaPDFModal({ url }: { url: string }) {
     setMounted(true);
   }, []);
 
-  if (!url) return null;
+  const formatUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    if (originalUrl.includes('drive.google.com')) {
+      return originalUrl.replace(/\/view.*|\/edit.*/, '/preview');
+    }
+    return originalUrl;
+  };
+
+  const cleanUrl = formatUrl(url);
 
   const modalContent = (
-    <div className="fixed inset-0 z-[10000] bg-slate-900/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300">
-      
-      {/* HEADER NAVBAR PEMBACA */}
-      <div className="bg-white/10 text-white px-6 py-4 flex justify-between items-center border-b border-white/10 shadow-2xl">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">📖</span>
+    <div className="fixed inset-0 z-[99999] bg-[#0F172A] flex flex-col animate-in fade-in duration-500 w-screen h-screen overflow-hidden">
+      <div className="bg-slate-900/50 backdrop-blur-md text-white px-6 py-4 flex justify-between items-center border-b border-white/5 flex-shrink-0 shadow-2xl">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center border border-emerald-500/30">
+            <span className="text-xl">📖</span>
+          </div>
           <div>
-            <h3 className="font-black text-sm uppercase tracking-widest">Pembaca E-Book Digital</h3>
-            <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-tighter">Mode Layar Penuh Aktif</p>
+            <h3 className="font-black text-xs uppercase tracking-[0.2em] text-emerald-400">Digital Library</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase">Mode Layar Penuh Aktif</p>
           </div>
         </div>
         <button 
           onClick={() => setIsOpen(false)}
-          className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2 rounded-full font-black text-xs uppercase transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/30"
+          className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/25"
         >
           Tutup x
         </button>
       </div>
 
-      {/* AREA PEMBACA PDF - DIBUAT MAKSIMAL */}
-      <div className="flex-1 w-full max-w-6xl mx-auto bg-white shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div className="flex-1 w-full bg-slate-800 relative">
         <iframe 
-          src={`${url}#toolbar=0&navpanes=0`} 
+          src={cleanUrl} 
           className="w-full h-full border-none"
           title="E-Book Viewer"
         />
       </div>
-
-      {/* FOOTER KECIL */}
-      <div className="bg-black/20 text-white/40 text-[9px] text-center py-2 uppercase tracking-[0.3em] font-bold">
-        E-Perpus Kejaksaan RI • Proyek Rantau 2026
-      </div>
     </div>
   );
 
+  // Jika URL kosong, tampilkan tombol abu-abu (Disabled)
+  if (!url) {
+    return (
+      <button disabled className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 cursor-not-allowed">
+        <span>🔒</span> Belum Ada PDF
+      </button>
+    );
+  }
+
+  // Jika URL ada, tampilkan tombol hijau bisa diklik
   return (
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-emerald-200 shadow-sm group"
+        className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-blue-200 shadow-sm group"
       >
         <span className="group-hover:scale-125 transition-transform">📖</span> Baca E-Book
       </button>
 
-      {/* Gunakan Portal agar tidak terjebak di dalam Card Buku */}
       {mounted && isOpen ? createPortal(modalContent, document.body) : null}
     </>
   );
