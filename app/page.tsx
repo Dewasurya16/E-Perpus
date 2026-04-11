@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link'; 
 import ScanBukuModal from './dashboard/ScanBukuModal';
 import QRCodeModal from './dashboard/QRCodeModal';
+import AIAssistant from './AIAssistant';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -121,7 +122,7 @@ export default async function PublicKatalogPage() {
           <div className="bg-white p-8 rounded-3xl border border-slate-100 hover:shadow-lg transition-all text-center group">
             <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl group-hover:scale-110 transition-transform">📱</div>
             <h4 className="font-black text-slate-800 mb-3">Sistem QR Terpadu</h4>
-            <p className="text-xs text-slate-500 leading-relaxed">Publik dapat melakukan scan QR Code pada fisik buku untuk melihat detail, histori, dan ketersediaan stok secara *real-time*.</p>
+            <p className="text-xs text-slate-500 leading-relaxed">Publik dapat melakukan scan QR Code pada fisik buku untuk melihat detail, histori, dan ketersediaan stok secara real-time.</p>
           </div>
           <div className="bg-white p-8 rounded-3xl border border-slate-100 hover:shadow-lg transition-all text-center group">
             <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl group-hover:scale-110 transition-transform">📚</div>
@@ -160,7 +161,6 @@ export default async function PublicKatalogPage() {
               books?.map((book) => (
                 <div key={book.id} className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden">
                   
-                  {/* Aksen Garis Atas */}
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#1B4332] to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                   <div className="flex-1 mb-6 mt-2">
@@ -168,7 +168,6 @@ export default async function PublicKatalogPage() {
                       <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border border-emerald-100">
                         {book.category || 'Umum'}
                       </span>
-                      {/* Bintang Rating */}
                       <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
                         <span className="text-amber-400 text-[10px]">⭐</span>
                         <span className="text-[10px] font-black text-amber-700">{book.rating || '0.0'}</span>
@@ -194,7 +193,7 @@ export default async function PublicKatalogPage() {
       </main>
 
       {/* ========================================= */}
-      {/* 6. FOOTER RESMI INSTANSI                    */}
+      {/* 6. FOOTER RESMI INSTANSI                  */}
       {/* ========================================= */}
       <footer className="bg-slate-900 text-slate-400 py-12 border-t-4 border-[#1B4332]">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -226,9 +225,14 @@ export default async function PublicKatalogPage() {
         </div>
       </footer>
       
-      {/* PERBAIKAN: HANYA KIRIM isLoggedIn, HAPUS books={books} */}
+      {/* ========================================= */}
+      {/* FLOATING BUTTONS                          */}
+      {/* Scan QR — bottom-left                     */}
+      {/* AI Chat  — bottom-right (dari AIAssistant)*/}
+      {/* ========================================= */}
       <ScanBukuModal isLoggedIn={isLoggedIn} />
-      
+      <AIAssistant />
+
     </div>
   );
 }

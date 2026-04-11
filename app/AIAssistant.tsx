@@ -133,7 +133,6 @@ export default function AIAssistant() {
           <span className="text-white text-3xl">🤖</span>
         )}
       </button>
-      <AIAssistant />
     </div>
   );
 }
