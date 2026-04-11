@@ -109,7 +109,7 @@ export default async function DashboardPage(props: any) {
           <div className="flex items-center gap-4">
             <div className="hidden sm:block">
               {/* SCANNER DI PASANG DI HEADER AGAR BISA DIAKSES KAPAN SAJA */}
-              <ScanBukuModal books={books || []} />
+             <ScanBukuModal isLoggedIn={true} />
             </div>
             <ProfileMenu email={userEmail} role={session} />
           </div>
@@ -505,7 +505,7 @@ export default async function DashboardPage(props: any) {
         
         {/* SCANNER VERSI MOBILE KITA TARUH DI TENGAH BAWAH */}
         <div className="relative -top-5">
-           <ScanBukuModal books={books || []} />
+          <ScanBukuModal isLoggedIn={true} />
         </div>
 
         <Link href="?tab=sirkulasi" className={`flex flex-col items-center gap-1 p-1.5 transition-colors ${activeTab === 'sirkulasi' ? 'text-[#1B4332]' : 'text-slate-400'}`}>

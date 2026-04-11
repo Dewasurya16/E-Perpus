@@ -96,7 +96,7 @@ export default async function KatalogPage(props: any) {
                 </Suspense>
               </div>
               <SortDropdown />
-              <ScanBukuModal books={books || []} />
+             <ScanBukuModal isLoggedIn={true} />
             </div>
           </div>
 

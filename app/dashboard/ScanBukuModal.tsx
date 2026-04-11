@@ -2,16 +2,28 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import Link from 'next/link';
 
-// IMPORT KOMPONEN BACA PDF KITA (Wajib Ada!)
+// Sesuaikan jumlah titik (../) dengan lokasi folder lib Bos
+import { supabase } from '../../lib/supabase'; 
 import BacaPDFModal from './BacaPDFModal'; 
 
-export default function ScanBukuModal({ books }: { books: any[] }) {
+export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scannedBook, setScannedBook] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [katalogBuku, setKatalogBuku] = useState<any[]>([]);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+    
+    // Ambil data buku otomatis
+    const fetchBukuMandiri = async () => {
+      const { data } = await supabase.from('books').select('*');
+      if (data) setKatalogBuku(data);
+    };
+    fetchBukuMandiri();
+  }, []);
 
   useEffect(() => {
     let isComponentMounted = true; 
@@ -31,9 +43,13 @@ export default function ScanBukuModal({ books }: { books: any[] }) {
         
         scanner.render(
           (result) => {
-            const found = books.find(b => b.id === result);
+            const extractedId = result.split('/').pop() || result; 
+            const found = katalogBuku.find(b => b.id === extractedId);
+            
             if (found) {
               setScannedBook(found);
+            } else {
+              alert("Aset tidak ditemukan di database kami.");
             }
           },
           () => {} 
@@ -48,72 +64,90 @@ export default function ScanBukuModal({ books }: { books: any[] }) {
          scanner.clear().catch(() => {}); 
       }
     };
-  }, [isOpen, scannedBook, books]);
+  }, [isOpen, scannedBook, katalogBuku]);
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl p-6 sm:p-8 relative animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-300 overflow-hidden">
         
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center p-6 border-b border-slate-100 shrink-0">
           <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><span>📷</span> Pemindai Pintar</h3>
           <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-600 flex items-center justify-center font-bold transition-colors">✕</button>
         </div>
 
-        {scannedBook ? (
-          <div className="text-center animate-in zoom-in duration-300">
-            <span className="text-5xl block mb-3">📚</span>
-            <p className="text-[10px] font-black text-emerald-600 uppercase mb-2 tracking-widest">Aset Ditemukan</p>
-            <h4 className="text-lg font-black text-slate-800 leading-snug mb-6">{scannedBook.title}</h4>
+        <div className="p-6 overflow-y-auto">
+          {scannedBook ? (
+            <div className="text-center animate-in zoom-in duration-300">
+              <span className="text-5xl block mb-3">📚</span>
+              <p className="text-[10px] font-black text-emerald-600 uppercase mb-2 tracking-widest">Aset Ditemukan</p>
+              <h4 className="text-lg font-black text-slate-800 leading-snug mb-6">{scannedBook.title}</h4>
 
-            {/* INFO RAK & STOK FISIK */}
-            <div className="grid grid-cols-2 gap-3 mb-6 text-left">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Lokasi Rak</p>
-                <p className="font-bold text-sm text-slate-800">📍 {scannedBook.rak || 'TBA'}</p>
+              <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Lokasi Rak</p>
+                  <p className="font-bold text-sm text-slate-800">📍 {scannedBook.rak || 'TBA'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sisa Stok</p>
+                  <p className={`font-bold text-sm ${scannedBook.stock > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {scannedBook.stock > 0 ? `${scannedBook.stock} Tersedia` : 'Habis'}
+                  </p>
+                </div>
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sisa Stok</p>
-                <p className={`font-bold text-sm ${scannedBook.stock > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {scannedBook.stock > 0 ? `${scannedBook.stock} Tersedia` : 'Habis'}
+
+              <div className="space-y-3">
+                <BacaPDFModal url={scannedBook.pdf_url} />
+
+                {isLoggedIn ? (
+                  <Link href={`/dashboard?tab=buku`} className="flex items-center justify-center w-full bg-[#1B4332] text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-[#123023] transition-all">
+                    Pinjam Aset
+                  </Link>
+                ) : (
+                  <Link href="/login" className="flex items-center justify-center w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-black transition-all">
+                    🔐 Login & Pinjam
+                  </Link>
+                )}
+
+                <button onClick={() => setScannedBook(null)} className="w-full bg-slate-100 text-slate-500 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-colors border border-slate-200">
+                  Pindai Buku Lain
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="[&_video]:w-full [&_video]:rounded-2xl [&_video]:object-cover [&_select]:w-full [&_select]:p-3 [&_select]:bg-slate-50 [&_select]:rounded-xl [&_select]:border [&_select]:border-slate-200 [&_select]:mb-4 [&_select]:font-bold [&_select]:text-xs [&_select]:text-slate-700 [&_select]:outline-none [&_button]:w-full [&_button]:bg-[#1B4332] [&_button]:text-white [&_button]:py-3.5 [&_button]:rounded-xl [&_button]:font-black [&_button]:text-[10px] [&_button]:uppercase [&_button]:tracking-widest [&_button]:mt-2 [&_a]:hidden w-full">
+                <div id="qr-reader-box" className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 min-h-[250px]"></div>
+              </div>
+              
+              <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <p className="text-center text-[10px] font-bold text-amber-700 uppercase leading-relaxed">
+                  💡 <span className="font-black text-amber-800">Ganti Kamera?</span><br/>
+                  Klik tombol <strong className="text-slate-800">"STOP SCANNING"</strong>, lalu pilih kamera dari menu.
                 </p>
               </div>
             </div>
-
-            {/* AREA TOMBOL AKSI */}
-            <div className="space-y-3">
-              {/* Memanggil Tombol Baca E-Book yang sudah kita percantik sebelumnya */}
-              <BacaPDFModal url={scannedBook.pdf_url} />
-
-              <button onClick={() => setScannedBook(null)} className="w-full bg-slate-100 text-slate-500 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-colors border border-slate-200">
-                Pindai Buku Lain
-              </button>
-            </div>
-
-          </div>
-        ) : (
-          <div>
-            <div className="[&_select]:w-full [&_select]:p-4 [&_select]:bg-slate-50 [&_select]:rounded-2xl [&_select]:border-2 [&_select]:border-slate-200 [&_select]:mb-4 [&_select]:font-bold [&_select]:text-sm [&_select]:text-slate-700 [&_select]:outline-none [&_select]:focus:border-emerald-500 [&_button]:w-full [&_button]:bg-[#1B4332] [&_button]:text-white [&_button]:py-4 [&_button]:rounded-2xl [&_button]:font-black [&_button]:text-xs [&_button]:uppercase [&_button]:tracking-widest [&_button]:hover:bg-[#143628] [&_button]:transition-colors [&_a]:hidden overflow-hidden">
-              <div id="qr-reader-box" className="w-full overflow-hidden rounded-3xl border-2 border-dashed border-emerald-300 bg-slate-50 min-h-[300px]"></div>
-            </div>
-            
-            <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-              <p className="text-center text-[10px] font-bold text-amber-700 uppercase leading-relaxed">
-                💡 <span className="font-black text-amber-800">Ganti Kamera?</span><br/>
-                Klik tombol <strong className="text-slate-800">"STOP SCANNING"</strong>, lalu pilih kamera dari menu.
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 
   return (
     <>
-      <button onClick={() => { setIsOpen(true); setScannedBook(null); }} className="h-14 px-5 sm:px-6 flex items-center justify-center gap-2.5 bg-emerald-400 hover:bg-emerald-300 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:scale-95 flex-shrink-0">
-        <span className="text-xl">📷</span>
-        <span className="hidden sm:block">Scan</span>
+      {/* KUNCI UTAMA DI SINI BOS:
+        - fixed: Biar melayang terus
+        - bottom-6: Jarak dari bawah 24px
+        - left-6: Jarak dari KIRI 24px (Menjauh dari Robot AI di Kanan)
+        - z-[9999]: Biar selalu di depan 
+      */}
+      <button 
+        onClick={() => { setIsOpen(true); setScannedBook(null); }} 
+        className="fixed bottom-6 left-6 z-[9999] flex items-center justify-center w-14 h-14 bg-gradient-to-r from-emerald-400 to-emerald-500 text-white rounded-full shadow-[0_10px_25px_rgba(16,185,129,0.5)] hover:scale-110 hover:rotate-12 transition-all duration-300 border-2 border-white"
+        title="Scan QR Aset"
+      >
+        <span className="text-2xl">📷</span>
       </button>
+      
       {mounted && isOpen ? createPortal(modalContent, document.body) : null}
     </>
   );

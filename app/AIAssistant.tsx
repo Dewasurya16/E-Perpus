@@ -52,7 +52,9 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end">
+    // PERBAIKAN DI SINI: bottom-[90px] untuk Mobile agar tidak nabrak menu navbar bawah
+    // md:bottom-6 untuk Desktop agar kembali ke pojok normal
+    <div className="fixed bottom-[90px] md:bottom-6 right-6 z-[99999] flex flex-col items-end">
       
       {/* Jendela Chat */}
       {isOpen && (
@@ -131,7 +133,7 @@ export default function AIAssistant() {
           <span className="text-white text-3xl">🤖</span>
         )}
       </button>
-
+      <AIAssistant />
     </div>
   );
 }
