@@ -1,12 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// 1. Define the context with params as a Promise
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
 export async function PATCH(
-  _req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: RouteContext
 ) {
   try {
-    const loanId = Number(params.id);
+    // 2. Await the params before accessing properties
+    const { id } = await context.params;
+    const loanId = Number(id);
 
     // 1. Ambil data loan + book_id saat ini
     const { data: loan, error: fetchError } = await supabase
