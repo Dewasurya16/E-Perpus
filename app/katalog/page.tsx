@@ -16,17 +16,16 @@ import QRCodeModal from '../dashboard/QRCodeModal';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Warna cover otomatis berdasarkan kategori
 const getCoverStyle = (category: string) => {
   const cat = (category || '').toLowerCase();
-  if (cat.includes('pidana'))    return { bg: 'from-rose-800 to-rose-950',     icon: '⚖️', accent: '#fca5a5' };
-  if (cat.includes('perdata'))   return { bg: 'from-blue-800 to-blue-950',     icon: '📜', accent: '#93c5fd' };
-  if (cat.includes('tata'))      return { bg: 'from-violet-800 to-violet-950', icon: '🏛️', accent: '#c4b5fd' };
-  if (cat.includes('keuangan'))  return { bg: 'from-amber-700 to-amber-950',   icon: '💰', accent: '#fcd34d' };
-  if (cat.includes('korupsi'))   return { bg: 'from-orange-700 to-orange-950', icon: '🔍', accent: '#fdba74' };
-  if (cat.includes('ham'))       return { bg: 'from-teal-700 to-teal-950',     icon: '🤝', accent: '#5eead4' };
-  if (cat.includes('pajak'))     return { bg: 'from-green-700 to-green-950',   icon: '📊', accent: '#86efac' };
-  return { bg: 'from-[#1B4332] to-[#0a1f18]', icon: '📚', accent: '#6ee7b7' };
+  if (cat.includes('pidana'))   return { bg: 'from-rose-900 via-rose-800 to-red-950',       icon: '⚖️', accent: '#fca5a5',  stripe: '#be123c' };
+  if (cat.includes('perdata'))  return { bg: 'from-blue-900 via-blue-800 to-indigo-950',     icon: '📜', accent: '#93c5fd',  stripe: '#1d4ed8' };
+  if (cat.includes('tata'))     return { bg: 'from-violet-900 via-violet-800 to-purple-950', icon: '🏛️', accent: '#c4b5fd', stripe: '#7c3aed' };
+  if (cat.includes('keuangan')) return { bg: 'from-amber-800 via-amber-700 to-yellow-950',   icon: '💰', accent: '#fcd34d',  stripe: '#d97706' };
+  if (cat.includes('korupsi'))  return { bg: 'from-orange-800 via-orange-700 to-red-950',    icon: '🔍', accent: '#fdba74',  stripe: '#c2410c' };
+  if (cat.includes('ham'))      return { bg: 'from-teal-800 via-teal-700 to-cyan-950',       icon: '🤝', accent: '#5eead4',  stripe: '#0f766e' };
+  if (cat.includes('pajak'))    return { bg: 'from-green-800 via-green-700 to-emerald-950',  icon: '📊', accent: '#86efac',  stripe: '#15803d' };
+  return { bg: 'from-[#1B4332] via-[#2D6A4F] to-[#0a1f18]', icon: '📚', accent: '#6ee7b7', stripe: '#065f46' };
 };
 
 export default async function KatalogPage(props: any) {
@@ -42,7 +41,6 @@ export default async function KatalogPage(props: any) {
   const filterCat  = searchParams?.cat || '';
   const sortParam  = searchParams?.sort || 'terbaru';
 
-  // ── Query buku ──
   let supabaseQuery = supabase.from('books').select('*');
   if (query)     supabaseQuery = supabaseQuery.or(`title.ilike.%${query}%,author.ilike.%${query}%`);
   if (filterCat) supabaseQuery = supabaseQuery.ilike('category', filterCat);
@@ -57,7 +55,6 @@ export default async function KatalogPage(props: any) {
 
   const { data: books } = await supabaseQuery;
 
-  // Stats
   const { data: allBooks } = await supabase.from('books').select('category, stock');
   const uniqueCategories = Array.from(
     new Set(allBooks?.map(b => b.category).filter(Boolean))
@@ -68,78 +65,110 @@ export default async function KatalogPage(props: any) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime();
 
   return (
-    <div className="min-h-screen bg-[#F0F4F2] font-sans pb-32 relative">
+    <div className="min-h-screen bg-[#F3F6F4] font-sans pb-40 relative">
+
+      {/* ── NOISE TEXTURE OVERLAY ── */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '128px',
+        }}
+      />
 
       {/* ── STICKY HEADER ── */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/50 shadow-[0_1px_24px_rgba(0,0,0,0.06)]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 h-16 flex items-center justify-between gap-4">
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] rounded-xl flex items-center justify-center shadow-md">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-8 h-8 bg-[#1B4332] rounded-lg flex items-center justify-center shadow-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
               </svg>
             </div>
-            <div>
-              <h1 className="text-sm font-black uppercase text-slate-900 leading-none tracking-tight">E-Perpus</h1>
-              <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Kejaksaan Negeri Soppeng</p>
+            <div className="leading-none">
+              <span className="text-[13px] font-black text-slate-900 tracking-tight">E-Perpus</span>
+              <span className="mx-2 text-slate-300">·</span>
+              <span className="text-[10px] font-bold text-[#1B4332] uppercase tracking-widest">Kejari Soppeng</span>
             </div>
           </div>
           <ProfileMenu email={userEmail} role={userRole} />
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-8">
+      <main className="max-w-7xl mx-auto px-5 sm:px-10 relative z-10">
 
         {/* ── HERO ── */}
-        <div className="mt-8 rounded-[2.5rem] overflow-hidden shadow-2xl">
-          <div className="bg-[#1B4332] px-8 sm:px-14 pt-12 pb-8 relative">
-            {/* Dekorasi */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-0 left-20 w-48 h-48 bg-[#D4AF37]/10 rounded-full blur-[60px] pointer-events-none" />
-            <div className="absolute top-8 right-8 opacity-[0.04] text-[10rem] leading-none pointer-events-none select-none font-black">⚖</div>
+        <div className="mt-8 rounded-3xl overflow-hidden shadow-[0_8px_48px_rgba(27,67,50,0.22)]">
 
-            {/* Judul */}
-            <div className="relative z-10 mb-8">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 bg-[#D4AF37]/20 border border-[#D4AF37]/30 rounded-full text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Pusat Referensi Digital
-              </span>
-              <h2 className="text-4xl sm:text-6xl font-black text-white leading-[0.9] tracking-tighter mb-4">
-                Katalog<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-[#D4AF37]">Aset Buku</span>
-              </h2>
-              <p className="text-slate-400 text-sm font-medium max-w-md">
-                Temukan dan pinjam literatur hukum pilihan untuk menunjang tugas kedinasan.
-              </p>
+          {/* Top section */}
+          <div className="bg-[#1B4332] px-8 sm:px-16 pt-14 pb-10 relative overflow-hidden">
+
+            {/* Background decorations */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {/* Large glow */}
+              <div className="absolute -top-20 -right-20 w-[480px] h-[480px] bg-emerald-500/10 rounded-full blur-[120px]" />
+              <div className="absolute -bottom-10 left-10 w-64 h-64 bg-[#D4AF37]/10 rounded-full blur-[80px]" />
+              {/* Grid lines */}
+              <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+                    <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+              {/* Big decorative symbol */}
+              <span className="absolute right-10 top-6 text-[120px] leading-none opacity-[0.035] font-black select-none text-white">⚖</span>
             </div>
 
-            {/* Stats */}
-            <div className="relative z-10 grid grid-cols-3 gap-3 mb-8 max-w-sm">
-              {[
-                { label: 'Total Koleksi', value: totalBooks },
-                { label: 'Tersedia',      value: tersediaBooks },
-                { label: 'Kategori',      value: uniqueCategories.length },
-              ].map(s => (
-                <div key={s.label} className="bg-white/8 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
-                  <p className="text-xl font-black text-white">{s.value}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
+            <div className="relative z-10 flex flex-col lg:flex-row gap-10 items-start lg:items-end justify-between">
+
+              {/* Left — Headline */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 bg-white/8 border border-white/12 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#D4AF37]">Pusat Referensi Digital</span>
                 </div>
-              ))}
+
+                <h2 className="text-5xl sm:text-[4.5rem] font-black text-white leading-[0.88] tracking-[-0.03em] mb-5">
+                  Katalog<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-[#a8e6c1] to-[#D4AF37]">
+                    Aset Buku
+                  </span>
+                </h2>
+
+                <p className="text-slate-400 text-sm font-medium max-w-sm leading-relaxed">
+                  Temukan dan pinjam literatur hukum pilihan untuk menunjang tugas kedinasan Anda.
+                </p>
+              </div>
+
+              {/* Right — Stats */}
+              <div className="flex gap-3 flex-shrink-0">
+                {[
+                  { label: 'Koleksi',  value: totalBooks,             icon: '📚' },
+                  { label: 'Tersedia', value: tersediaBooks,           icon: '✅' },
+                  { label: 'Kategori', value: uniqueCategories.length, icon: '🗂️' },
+                ].map(s => (
+                  <div key={s.label} className="relative overflow-hidden bg-white/7 border border-white/10 rounded-2xl px-5 py-4 min-w-[80px] text-center backdrop-blur-sm">
+                    <p className="text-xs mb-1.5">{s.icon}</p>
+                    <p className="text-2xl font-black text-white tabular-nums">{s.value}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Search + Sort + Scan
-                ★ FIX: SearchBar & SortDropdown menggunakan useSearchParams() 
-                   sehingga WAJIB dibungkus <Suspense> masing-masing agar Next.js
-                   tidak melempar hydration error dan filter bekerja dengan benar. */}
-            <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Search Row */}
+            <div className="relative z-10 mt-10 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
               <div className="flex-1">
-                <Suspense fallback={<div className="h-14 bg-white/5 rounded-2xl animate-pulse" />}>
+                <Suspense fallback={<div className="h-[52px] bg-white/8 rounded-2xl animate-pulse" />}>
                   <SearchBar />
                 </Suspense>
               </div>
-              <div className="flex items-center gap-3">
-                {/* ★ FIX: SortDropdown juga butuh Suspense */}
-                <Suspense fallback={<div className="h-14 w-[140px] bg-white/5 rounded-2xl animate-pulse" />}>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <Suspense fallback={<div className="h-[52px] w-36 bg-white/8 rounded-2xl animate-pulse" />}>
                   <SortDropdown />
                 </Suspense>
                 <ScanBukuModal isLoggedIn={true} />
@@ -147,11 +176,10 @@ export default async function KatalogPage(props: any) {
             </div>
           </div>
 
-          {/* Filter strip — di luar hero utama supaya padding rapi
-              ★ FIX: CategoryFilter pakai useSearchParams() → wajib Suspense */}
+          {/* Category filter strip */}
           {uniqueCategories.length > 0 && (
-            <div className="bg-[#163a2c] px-8 sm:px-14 py-1">
-              <Suspense fallback={<div className="h-12 bg-white/5 rounded-xl animate-pulse my-4" />}>
+            <div className="bg-[#163a2c] border-t border-white/5 px-8 sm:px-16 py-0.5">
+              <Suspense fallback={<div className="h-10 bg-white/5 rounded-xl animate-pulse my-3" />}>
                 <CategoryFilter categories={uniqueCategories} />
               </Suspense>
             </div>
@@ -159,109 +187,130 @@ export default async function KatalogPage(props: any) {
         </div>
 
         {/* ── INFO BAR ── */}
-        <div className="mt-8 flex items-center justify-between">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-            {books?.length || 0} buku ditemukan
-            {query     && <span className="text-emerald-600"> · "{query}"</span>}
-            {filterCat && <span className="text-emerald-600"> · {filterCat}</span>}
-          </p>
+        <div className="mt-7 mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="w-1 h-4 rounded-full bg-[#1B4332]" />
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              {books?.length || 0} buku ditemukan
+              {query     && <span className="text-emerald-600 font-black"> · "{query}"</span>}
+              {filterCat && <span className="text-emerald-600 font-black"> · {filterCat}</span>}
+            </p>
+          </div>
         </div>
 
-        {/* ── GRID KATALOG ── */}
+        {/* ── BOOK GRID ── */}
         {books && books.length > 0 ? (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {books.map((book, idx) => {
-              const isNew   = new Date(book.created_at).getTime() > sevenDaysAgo;
-              const isHabis = book.stock === 0;
-              const cover   = getCoverStyle(book.category);
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {books.map((book) => {
+              const isNew        = new Date(book.created_at).getTime() > sevenDaysAgo;
+              const isHabis      = book.stock === 0;
+              const cover        = getCoverStyle(book.category);
               const ratingRounded = Math.round(book.rating || 0);
 
               return (
                 <div
                   key={book.id}
-                  className={`group relative bg-white rounded-[1.75rem] border shadow-sm overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${
-                    isHabis ? 'border-slate-200 opacity-75' : 'border-slate-100 hover:border-emerald-200'
-                  }`}
+                  className={`group relative bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-300
+                    border shadow-sm hover:shadow-[0_8px_32px_rgba(27,67,50,0.14)] hover:-translate-y-1
+                    ${isHabis
+                      ? 'border-slate-200/60 opacity-70'
+                      : 'border-slate-100 hover:border-emerald-200/60'
+                    }`}
                 >
                   {/* Badge Baru */}
                   {isNew && !isHabis && (
-                    <div className="absolute top-3.5 left-3.5 z-20">
-                      <span className="bg-[#D4AF37] text-white text-[8px] font-black uppercase px-2.5 py-1 rounded-full shadow-lg tracking-wider">
+                    <div className="absolute top-3 left-3 z-20">
+                      <span className="inline-flex items-center gap-1 bg-[#D4AF37] text-white text-[7px] font-black uppercase px-2.5 py-1 rounded-full shadow-lg tracking-wider">
                         🔥 Baru
                       </span>
                     </div>
                   )}
 
-                  {/* Overlay Stok Habis */}
+                  {/* Stok Habis overlay */}
                   {isHabis && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[2px]">
-                      <span className="bg-slate-800 text-white text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-lg tracking-widest">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[3px]">
+                      <span className="bg-slate-800 text-white text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg tracking-widest">
                         Stok Habis
                       </span>
                     </div>
                   )}
 
-                  {/* Cover Buku */}
-                  <div className={`relative h-44 bg-gradient-to-br ${cover.bg} flex items-center justify-center overflow-hidden`}>
-                    <div className="absolute top-2 left-2 right-2 bottom-2 border border-white/10 rounded-2xl" />
+                  {/* Cover */}
+                  <div className={`relative h-44 bg-gradient-to-br ${cover.bg} overflow-hidden`}>
+                    {/* Spine stripe */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: cover.stripe }} />
+
+                    {/* Background glow */}
                     <div
-                      className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10"
-                      style={{ background: cover.accent, filter: 'blur(20px)' }}
+                      className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-15 blur-2xl"
+                      style={{ background: cover.accent }}
                     />
-                    {/* Simulasi buku */}
-                    <div className="relative w-20 h-28 rounded-lg shadow-[4px_4px_16px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden group-hover:scale-105 transition-transform duration-500 bg-white/10 border border-white/20 backdrop-blur-sm">
-                      <div className="h-1 w-full" style={{ background: cover.accent, opacity: 0.8 }} />
-                      <div className="flex-1 flex flex-col items-center justify-center p-2 gap-1">
-                        <span className="text-2xl">{cover.icon}</span>
-                        <p className="text-white text-[7px] font-black uppercase text-center leading-tight line-clamp-3">
-                          {book.title}
-                        </p>
+
+                    {/* Book mock */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div
+                        className="w-[68px] h-[92px] rounded-md shadow-[2px_4px_20px_rgba(0,0,0,0.45)] flex flex-col overflow-hidden
+                          group-hover:scale-105 group-hover:shadow-[4px_8px_28px_rgba(0,0,0,0.55)] transition-all duration-500
+                          bg-white/12 border border-white/20 backdrop-blur-sm"
+                      >
+                        <div className="h-1 w-full" style={{ background: cover.accent, opacity: 0.9 }} />
+                        <div className="flex-1 flex flex-col items-center justify-center p-2 gap-1.5">
+                          <span className="text-xl leading-none">{cover.icon}</span>
+                          <p className="text-white text-[6px] font-black uppercase text-center leading-tight line-clamp-3 px-0.5">
+                            {book.title}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    {/* Stok badge */}
-                    <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] font-black px-2.5 py-1 rounded-full">
+
+                    {/* Stock pill */}
+                    <div className="absolute bottom-2.5 right-2.5 bg-black/35 backdrop-blur-md border border-white/15 text-white text-[8px] font-bold px-2.5 py-1 rounded-full">
                       {book.stock} pcs
                     </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
-                      <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-widest">
+                  {/* Content */}
+                  <div className="p-4 flex flex-col flex-grow">
+
+                    {/* Tags */}
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                      <span className="text-[7.5px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100/80 px-2 py-0.5 rounded uppercase tracking-widest">
                         {book.category || 'Umum'}
                       </span>
                       {book.rak && (
-                        <span className="text-[8px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        <span className="text-[7.5px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
                           📍 Rak {book.rak}
                         </span>
                       )}
                     </div>
 
-                    {/* Rating bintang */}
-                    <div className="flex items-center gap-0.5 mb-2">
+                    {/* Rating */}
+                    <div className="flex items-center gap-0.5 mb-2.5">
                       {[...Array(5)].map((_, i) => (
-                        <svg key={i} width="11" height="11" viewBox="0 0 24 24"
+                        <svg key={i} width="10" height="10" viewBox="0 0 24 24"
                           fill={i < ratingRounded ? '#F59E0B' : '#E2E8F0'}
                           className="flex-shrink-0">
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                       ))}
-                      <span className="text-[8px] text-slate-400 font-bold ml-1">
-                        ({book.rating_count || 0})
-                      </span>
+                      <span className="text-[7.5px] text-slate-400 font-bold ml-1">({book.rating_count || 0})</span>
                     </div>
 
-                    <h3 className="text-[13px] font-black text-slate-800 line-clamp-2 leading-snug mb-1 group-hover:text-emerald-700 transition-colors">
+                    {/* Title & Author */}
+                    <h3 className="text-[12.5px] font-black text-slate-800 line-clamp-2 leading-snug mb-1 group-hover:text-[#1B4332] transition-colors duration-200">
                       {book.title}
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mb-1 truncate">
+                    <p className="text-[9.5px] text-slate-400 font-semibold mb-1 truncate">
                       {book.author || 'Tim Kejaksaan'}
                     </p>
                     {book.publisher && (
-                      <p className="text-[9px] text-slate-300 font-medium mb-4 truncate">{book.publisher}</p>
+                      <p className="text-[8.5px] text-slate-300 font-medium truncate">{book.publisher}</p>
                     )}
 
-                    {/* Tombol Aksi */}
+                    {/* Divider */}
+                    <div className="my-3.5 border-t border-slate-100" />
+
+                    {/* Actions */}
                     <div className="mt-auto space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <BacaPDFModal url={book.pdf_url} />
@@ -275,24 +324,27 @@ export default async function KatalogPage(props: any) {
             })}
           </div>
         ) : (
-          <div className="mt-10 py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5 text-3xl">🔍</div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">Buku Tidak Ditemukan</h3>
-            <p className="text-sm text-slate-400 font-medium">
-              Coba gunakan kata kunci lain atau hapus filter kategori.
+          /* ── EMPTY STATE ── */
+          <div className="mt-6 py-28 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
+            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl shadow-sm">
+              🔍
+            </div>
+            <h3 className="text-base font-black text-slate-800 mb-2">Buku Tidak Ditemukan</h3>
+            <p className="text-sm text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+              Coba gunakan kata kunci lain atau hapus filter kategori yang aktif.
             </p>
           </div>
         )}
 
-        {/* ── RIWAYAT PINJAMAN ── */}
-        <div className="mt-20 pt-12 border-t-2 border-slate-200/60">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-10 h-10 bg-[#1B4332] text-white rounded-xl flex items-center justify-center text-lg shadow-md">
+        {/* ── HISTORY SECTION ── */}
+        <div className="mt-24 pt-12 border-t-2 border-dashed border-slate-200/70">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-9 h-9 bg-[#1B4332] text-white rounded-xl flex items-center justify-center text-base shadow-md flex-shrink-0">
               📋
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-800">Riwayat Pinjaman Saya</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <h2 className="text-lg font-black text-slate-800">Riwayat Pinjaman Saya</h2>
+              <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
                 Kelola peminjaman aktif &amp; beri ulasan
               </p>
             </div>
