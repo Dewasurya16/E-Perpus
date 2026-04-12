@@ -2,95 +2,170 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+// === DAFTAR MENU PINTAR (QUICK ACTIONS) ===
+// 👇 DI SINI SAYA SUDAH TAMBAHKAN MENU INFO PEGAWAI 👇
+// === DAFTAR MENU PINTAR (QUICK ACTIONS) ===
+const QUICK_PROMPTS = [
+  { icon: '🔍', label: 'Cari Buku Pidana', text: 'Tolong carikan rekomendasi buku terkait Hukum Pidana yang ada di perpustakaan.' },
+  { icon: '👥', label: 'Info Pegawai', text: 'Saya ingin mencari data pegawai di kantor ini.' }, // 👈 UBAH TEKSNYA JADI SEPERTI INI
+  { icon: '📅', label: 'Cek Aturan Pinjam', text: 'Berapa lama batas waktu peminjaman buku untuk pegawai, dan apa sanksinya jika terlambat?' },
+  { icon: '💡', label: 'Panduan QR Code', text: 'Bagaimana langkah-langkah meminjam buku menggunakan fitur Scan QR Code?' }
+];
+
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: 'Halo! Saya Asisten Pintar E-Perpus Kejaksaan. Ada yang bisa saya bantu terkait pencarian aset buku, lokasi rak, atau aturan peminjaman?' }
-  ]);
+  const [messages, setMessages] = useState<{role: string, text: string}[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll ke pesan terbaru
+  // Efek pembuka pertama kali
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([
+        { role: 'ai', text: 'Halo! Saya Asisten Pintar E-Perpus Kejaksaan Negeri Soppeng. 🤖\n\nSaya dilengkapi dengan kecerdasan buatan untuk membantu Anda. Silakan ketik pertanyaan Anda, atau pilih menu cepat di bawah ini:' }
+      ]);
+    }
+  }, [messages.length]);
+
+  // Auto-scroll yang lebih halus
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
+  useEffect(() => { scrollToBottom(); }, [messages, isTyping, isOpen]);
 
-  // Logika "Otak" AI Terhubung ke Backend Gemini Asli
+  // LOGIKA PINTAR ANTI-CRASH
   const generateSmartResponse = async (userText: string) => {
+    setIsTyping(true);
     try {
-      // Memanggil API Route yang terhubung ke Google Gemini dan Supabase
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText })
+        body: JSON.stringify({ 
+          message: userText,
+          history: messages.slice(1) 
+        })
       });
 
       const data = await res.json();
+
+      // JIKA KENA LIMIT GOOGLE ATAU SERVER SIBUK (Status 500)
+      if (!res.ok) {
+        setMessages(prev => [...prev, { 
+          role: 'ai', 
+          text: "Aduh, otak AI saya sedang kepanasan nih! 🤯 Sistem Google mendeteksi terlalu banyak pesan dalam 1 menit terakhir. Mohon beri saya waktu istirahat sekitar 1 menit, lalu tanyakan lagi ya, Bos!" 
+        }]);
+        return; // Hentikan eksekusi agar tidak error
+      }
       
+      // JIKA BERHASIL
       setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Maaf, koneksi ke server otak AI terputus. Coba lagi dalam beberapa saat." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "Maaf, koneksi internet sepertinya terputus atau server sedang down. Coba refresh halaman ya. 🔄" }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = input.trim();
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
+    setMessages(prev => [...prev, { role: 'user', text: text.trim() }]);
     setInput('');
-    setIsTyping(true);
+    generateSmartResponse(text.trim());
+  };
 
-    // Panggil kecerdasan AI yang asli
-    generateSmartResponse(userMessage);
+  const clearChat = () => {
+    setMessages([{ role: 'ai', text: 'Sesi obrolan telah dibersihkan. Ada hal lain yang ingin Anda ketahui? ✨' }]);
+  };
+
+  // FUNGSI PENYULAP TEKS BOLD (MARKDOWN)
+  const renderFormattedText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={index} className="font-black text-emerald-800">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
   };
 
   return (
-    // PERBAIKAN DI SINI: bottom-[90px] untuk Mobile agar tidak nabrak menu navbar bawah
-    // md:bottom-6 untuk Desktop agar kembali ke pojok normal
+    // DIKUNCI DI KANAN BAWAH (right-6) agar tidak tabrakan dengan Scanner di Kiri (left-6)
     <div className="fixed bottom-[90px] md:bottom-6 right-6 z-[99999] flex flex-col items-end">
       
-      {/* Jendela Chat */}
+      {/* JENDELA CHAT PREMIUM */}
       {isOpen && (
-        <div className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-200/60 overflow-hidden flex flex-col animate-in slide-in-from-bottom-5 zoom-in-95 duration-300 origin-bottom-right">
+        <div className="mb-4 w-[350px] sm:w-[420px] h-[550px] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-200/80 overflow-hidden flex flex-col animate-in slide-in-from-bottom-5 zoom-in-95 duration-300 origin-bottom-right">
           
-          {/* Header Premium AI */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-5 flex justify-between items-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl"></div>
+          {/* HEADER AI */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-[#1B4332] p-5 flex justify-between items-center relative overflow-hidden shrink-0">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl"></div>
             <div className="flex items-center gap-3 relative z-10">
-              <div className="w-10 h-10 bg-gradient-to-tr from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/10 animate-pulse">
-                <span className="text-xl">🤖</span>
+              <div className="w-12 h-12 bg-gradient-to-tr from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg border border-white/20 relative">
+                <span className="text-2xl">🤖</span>
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-800 rounded-full animate-pulse"></span>
               </div>
               <div>
-                <h3 className="font-black text-white tracking-tight">Asisten E-Perpus</h3>
-                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span> Online
-                </p>
+                <h3 className="font-black text-white text-[16px] tracking-tight leading-tight">Lexi - Asisten Pintar Kejaksaan Negeri Soppeng</h3>
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5 opacity-90">Powered by AI</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-rose-500 flex items-center justify-center text-white/70 hover:text-white transition-colors relative z-10">✕</button>
+            <div className="flex items-center gap-2 relative z-10">
+              <button onClick={clearChat} title="Bersihkan Obrolan" className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs transition-colors">🧹</button>
+              <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full bg-rose-500/80 hover:bg-rose-500 flex items-center justify-center text-white transition-colors">✕</button>
+            </div>
           </div>
 
-          {/* Area Pesan Chat */}
-          <div className="flex-1 p-5 overflow-y-auto bg-slate-50/50 space-y-4">
+          {/* AREA PESAN */}
+          <div className="flex-1 p-5 overflow-y-auto bg-slate-50/50 space-y-5 hide-scrollbar">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-[#1B4332] text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm font-medium leading-relaxed whitespace-pre-wrap'}`}>
-                  {msg.text}
+                
+                {/* Avatar AI jika yang membalas adalah AI */}
+                {msg.role === 'ai' && (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-[14px] shadow-sm mr-2 shrink-0 border border-slate-300/50 mt-1">🤖</div>
+                )}
+
+                <div className="flex flex-col gap-1 max-w-[80%]">
+                  <div className={`p-4 text-[13.5px] shadow-sm leading-relaxed ${
+                    msg.role === 'user' 
+                      ? 'bg-gradient-to-br from-[#1B4332] to-emerald-800 text-white rounded-2xl rounded-tr-sm font-medium' 
+                      : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm whitespace-pre-wrap'
+                  }`}>
+                    {renderFormattedText(msg.text)}
+                  </div>
+
+                  {/* TAMPILKAN QUICK PROMPTS HANYA DI BAWAH PESAN PERTAMA (WELCOME MESSAGE) */}
+                  {idx === 0 && messages.length === 1 && (
+                    <div className="mt-4 grid grid-cols-1 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1">Coba tanyakan:</p>
+                      {QUICK_PROMPTS.map((prompt, i) => (
+                        <button 
+                          key={i}
+                          onClick={() => handleSend(prompt.text)}
+                          className="flex items-center gap-3 text-left p-3 bg-white border border-emerald-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-sm group"
+                        >
+                          <span className="text-lg group-hover:scale-110 transition-transform">{prompt.icon}</span>
+                          <span className="text-[11px] font-extrabold text-slate-700 group-hover:text-emerald-800">{prompt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             
             {/* Indikator Mengetik */}
             {isTyping && (
-              <div className="flex justify-start">
-                <div className="max-w-[85%] p-4 bg-white border border-slate-200 rounded-2xl rounded-bl-sm shadow-sm flex gap-1.5 items-center">
+              <div className="flex justify-start items-end">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-[14px] shadow-sm mr-2 shrink-0 border border-slate-300/50">🤖</div>
+                <div className="p-4 bg-white border border-slate-200 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
@@ -100,39 +175,46 @@ export default function AIAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Form Canggih */}
-          <div className="p-4 bg-white border-t border-slate-100">
-            <form onSubmit={handleSend} className="flex items-center gap-2 relative">
+          {/* INPUT AREA */}
+          <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }} className="flex items-center gap-2 relative">
               <input 
                 type="text" 
-                placeholder="Tanya seputar perpustakaan..." 
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-full py-3.5 pl-5 pr-12 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                placeholder="Ketik pertanyaan di sini..." 
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-5 pr-14 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:font-medium placeholder:text-slate-400"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                disabled={isTyping}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isTyping}
-                className="absolute right-2 w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:bg-emerald-600 disabled:bg-slate-300 transition-colors shadow-md"
+                className="absolute right-2 w-10 h-10 bg-gradient-to-br from-emerald-500 to-[#1B4332] text-white rounded-[12px] flex items-center justify-center hover:scale-105 disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:scale-100 transition-all shadow-md disabled:shadow-none"
               >
-                ➤
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
               </button>
             </form>
+            <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-3">AI dapat membuat kesalahan. Cek kembali info penting.</p>
           </div>
         </div>
       )}
 
-      {/* Tombol Floating Action Button (FAB) */}
+      {/* FLOATING BUTTON (FAB) */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(16,185,129,0.4)] transition-all transform hover:scale-110 hover:-translate-y-1 ${isOpen ? 'bg-rose-500 rotate-90' : 'bg-gradient-to-tr from-emerald-500 to-[#1B4332]'}`}
+        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(16,185,129,0.4)] transition-all duration-500 transform hover:scale-110 hover:-translate-y-2 border-2 ${isOpen ? 'bg-rose-500 rotate-90 border-rose-400' : 'bg-gradient-to-tr from-emerald-500 to-[#1B4332] border-emerald-400'}`}
       >
         {isOpen ? (
           <span className="text-white text-2xl font-black">✕</span>
         ) : (
-          <span className="text-white text-3xl">🤖</span>
+          <div className="relative">
+            <span className="text-white text-3xl">🤖</span>
+            <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-rose-500 border-2 border-[#1B4332] rounded-full animate-ping"></span>
+            <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-rose-500 border-2 border-[#1B4332] rounded-full"></span>
+          </div>
         )}
       </button>
+
     </div>
   );
 }

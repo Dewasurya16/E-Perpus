@@ -4,8 +4,8 @@ import { createPortal } from 'react-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Link from 'next/link';
 
-import { supabase } from '../../lib/supabase'; 
-import BacaPDFModal from './BacaPDFModal'; 
+import { supabase } from '../../lib/supabase';
+import BacaPDFModal from './BacaPDFModal';
 
 export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,8 +13,8 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
   const [mounted, setMounted] = useState(false);
   const [katalogBuku, setKatalogBuku] = useState<any[]>([]);
 
-  useEffect(() => { 
-    setMounted(true); 
+  useEffect(() => {
+    setMounted(true);
     const fetchBukuMandiri = async () => {
       const { data } = await supabase.from('books').select('*');
       if (data) setKatalogBuku(data);
@@ -23,38 +23,37 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
   }, []);
 
   useEffect(() => {
-    let isComponentMounted = true; 
+    let isComponentMounted = true;
     let scanner: Html5QrcodeScanner | null = null;
     let timer: NodeJS.Timeout;
 
     if (isOpen && !scannedBook) {
       timer = setTimeout(() => {
         if (!isComponentMounted) return;
-        scanner = new Html5QrcodeScanner("qr-reader-box", { 
-          qrbox: { width: 250, height: 250 }, 
-          fps: 10,
-          rememberLastUsedCamera: true, 
-          supportedScanTypes: [0] 
-        }, false);
+        scanner = new Html5QrcodeScanner(
+          'qr-reader-box',
+          { qrbox: { width: 250, height: 250 }, fps: 10, rememberLastUsedCamera: true, supportedScanTypes: [0] },
+          false
+        );
         scanner.render(
           (result) => {
-            const extractedId = result.split('/').pop() || result; 
-            const found = katalogBuku.find(b => b.id === extractedId);
+            const extractedId = result.split('/').pop() || result;
+            const found = katalogBuku.find((b) => b.id === extractedId);
             if (found) {
               setScannedBook(found);
             } else {
-              alert("Aset tidak ditemukan di database kami.");
+              alert('Aset tidak ditemukan di database kami.');
             }
           },
-          () => {} 
+          () => {}
         );
       }, 300);
     }
 
-    return () => { 
+    return () => {
       isComponentMounted = false;
       if (timer) clearTimeout(timer);
-      if (scanner) scanner.clear().catch(() => {}); 
+      if (scanner) scanner.clear().catch(() => {});
     };
   }, [isOpen, scannedBook, katalogBuku]);
 
@@ -62,8 +61,15 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
     <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-300 overflow-hidden">
         <div className="flex justify-between items-center p-6 border-b border-slate-100 shrink-0">
-          <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><span>📷</span> Pemindai Pintar</h3>
-          <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-600 flex items-center justify-center font-bold transition-colors">✕</button>
+          <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+            <span>📷</span> Pemindai Pintar
+          </h3>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="w-10 h-10 rounded-full bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-600 flex items-center justify-center font-bold transition-colors"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="p-6 overflow-y-auto">
@@ -87,15 +93,24 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
               <div className="space-y-3">
                 <BacaPDFModal url={scannedBook.pdf_url} />
                 {isLoggedIn ? (
-                  <Link href={`/dashboard?tab=buku`} className="flex items-center justify-center w-full bg-[#1B4332] text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-[#123023] transition-all">
+                  <Link
+                    href="/dashboard?tab=buku"
+                    className="flex items-center justify-center w-full bg-[#1B4332] text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-[#123023] transition-all"
+                  >
                     Pinjam Aset
                   </Link>
                 ) : (
-                  <Link href="/login" className="flex items-center justify-center w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-black transition-all">
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-black transition-all"
+                  >
                     🔐 Login & Pinjam
                   </Link>
                 )}
-                <button onClick={() => setScannedBook(null)} className="w-full bg-slate-100 text-slate-500 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-colors border border-slate-200">
+                <button
+                  onClick={() => setScannedBook(null)}
+                  className="w-full bg-slate-100 text-slate-500 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-colors border border-slate-200"
+                >
                   Pindai Buku Lain
                 </button>
               </div>
@@ -107,8 +122,9 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
               </div>
               <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
                 <p className="text-center text-[10px] font-bold text-amber-700 uppercase leading-relaxed">
-                  💡 <span className="font-black text-amber-800">Ganti Kamera?</span><br/>
-                  Klik tombol <strong className="text-slate-800">"STOP SCANNING"</strong>, lalu pilih kamera dari menu.
+                  💡 <span className="font-black text-amber-800">Ganti Kamera?</span>
+                  <br />
+                  Klik <strong className="text-slate-800">"STOP SCANNING"</strong>, lalu pilih kamera dari menu.
                 </p>
               </div>
             </div>
@@ -120,14 +136,13 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
 
   return (
     <>
-      {/* =====================================================
-          TOMBOL SCAN QR — Fixed bottom-left, pill shape
-          Lebih jelas karena ada label teks "Pindai QR Aset"
-          AI Robot ada di bottom-right, jadi tidak bentrok
-         ===================================================== */}
-      <button 
-        onClick={() => { setIsOpen(true); setScannedBook(null); }} 
-        className="fixed bottom-6 left-6 z-[9999] flex items-center gap-3 pl-4 pr-5 h-14 bg-gradient-to-r from-[#1B4332] to-emerald-600 text-white rounded-2xl shadow-[0_8px_24px_rgba(27,67,50,0.5)] hover:shadow-[0_14px_32px_rgba(27,67,50,0.55)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 border border-emerald-500/30 group"
+      {/* ── FLOATING BUTTON — aligned with AI button (bottom-6) ── */}
+      <button
+        onClick={() => {
+          setIsOpen(true);
+          setScannedBook(null);
+        }}
+        className="fixed bottom-6 left-6 z-[9998] flex items-center gap-3 pl-4 pr-5 h-14 bg-gradient-to-r from-[#1B4332] to-emerald-600 text-white rounded-2xl shadow-[0_8px_24px_rgba(27,67,50,0.5)] hover:shadow-[0_14px_32px_rgba(27,67,50,0.6)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 border border-emerald-500/30 group"
         title="Pindai QR Aset"
       >
         <span className="text-xl leading-none group-hover:rotate-12 transition-transform duration-300">📷</span>
@@ -136,7 +151,7 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
           <span className="text-[11px] font-black uppercase tracking-wide">QR Aset</span>
         </div>
       </button>
-      
+
       {mounted && isOpen ? createPortal(modalContent, document.body) : null}
     </>
   );
