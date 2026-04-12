@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-// 1. Define the context with params as a Promise
-interface RouteContext {
+// Define the context to match Next.js 15+ expectations
+type Context = {
   params: Promise<{ id: string }>;
-}
+};
 
 export async function PATCH(
   req: NextRequest,
-  context: RouteContext
+  context: Context // params is inside context
 ) {
   try {
-    // 2. Await the params before accessing properties
+    // Await the params before using them
     const { id } = await context.params;
-    const loanId = Number(id);
+    
+    // Clean the ID (important if any trailing spaces leaked in)
+    const loanId = Number(id.trim());
 
-    // 1. Ambil data loan + book_id saat ini
+    if (isNaN(loanId)) {
+      return NextResponse.json({ error: 'ID tidak valid.' }, { status: 400 });
+    }
+
+    // 1. Ambil data loan
     const { data: loan, error: fetchError } = await supabase
       .from('loans')
       .select('book_id, status')
