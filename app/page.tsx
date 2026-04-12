@@ -83,8 +83,8 @@ export default async function PublicKatalogPage() {
               </div>
             </div>
             <div className="leading-none">
-              <p className="text-[13px] font-bold text-slate-900 tracking-tight">E-Perpustakaan Hukum</p>
-              <p className="text-[10px] font-semibold text-emerald-600 tracking-widest uppercase mt-0.5">Kejaksaan RI</p>
+              <p className="text-[13px] font-bold text-slate-900 tracking-tight">E-Perpustakaan</p>
+              <p className="text-[10px] font-semibold text-emerald-600 tracking-widest uppercase mt-0.5">Kejaksaan NegerI Soppeng</p>
             </div>
           </div>
 
@@ -149,7 +149,7 @@ export default async function PublicKatalogPage() {
             </h2>
 
             <p className="anim-up-3 text-emerald-100/70 font-medium max-w-xl text-[15px] leading-relaxed mb-10">
-              Akses cepat & transparan ke ratusan literatur hukum, aset, dan dokumen referensi milik Kejaksaan Republik Indonesia — tersedia untuk publik dan internal.
+              Akses cepat & transparan ke ratusan literatur hukum, aset, dan dokumen referensi milik Kejaksaan Negeri Soppeng — tersedia untuk publik dan internal.
             </p>
 
             {/* Buttons */}
@@ -358,7 +358,7 @@ export default async function PublicKatalogPage() {
               <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-[#1B4332] rounded-xl flex items-center justify-center shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
               </div>
-              <span className="text-white font-bold text-[13px]">E-Perpustakaan Hukum</span>
+              <span className="text-white font-bold text-[13px]">E-Perpustakaan Kejaksaan Negeri Soppeng </span>
             </div>
             <p className="text-[12px] leading-relaxed text-slate-500 max-w-xs">
               Sistem Informasi Manajemen Perpustakaan dan Aset Terpadu. Dibangun untuk mendukung transparansi akses literatur hukum.
@@ -371,7 +371,7 @@ export default async function PublicKatalogPage() {
             <ul className="space-y-3 text-[12px]">
               <li><Link href="/login"   className="hover:text-emerald-400 transition-colors flex items-center gap-2"><span className="text-emerald-700">›</span> Portal Pegawai</Link></li>
               <li><Link href="#katalog" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><span className="text-emerald-700">›</span> Katalog Publik</Link></li>
-              <li><a  href="#"          className="hover:text-emerald-400 transition-colors flex items-center gap-2"><span className="text-emerald-700">›</span> Situs Resmi Instansi</a></li>
+              <li><a  href="https://kejari-soppeng.kejaksaan.go.id/"          className="hover:text-emerald-400 transition-colors flex items-center gap-2"><span className="text-emerald-700">›</span> Situs Resmi Instansi</a></li>
             </ul>
           </div>
 
@@ -397,7 +397,7 @@ export default async function PublicKatalogPage() {
 
         {/* Bottom bar */}
         <div className="border-t border-white/5 py-6 text-center text-[10px] text-slate-600 uppercase tracking-widest font-medium">
-          &copy; {new Date().getFullYear()} Pranata Komputer 625 · Kejaksaan RI · Hak Cipta Dilindungi
+          &copy; {new Date().getFullYear()} Kejaksaan Negeri Soppeng · Kejaksaan RI · Hak Cipta Dilindungi
         </div>
       </footer>
 

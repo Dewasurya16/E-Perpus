@@ -167,7 +167,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <p className="text-slate-900 font-bold text-[13px]">E-Perpustakaan</p>
-              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-widest">Kejaksaan RI</p>
+              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-widest">Kejaksaan Negeri Soppeng</p>
             </div>
           </div>
 

@@ -121,7 +121,7 @@ export default function LoginPage() {
           </div>
           <div>
             <p className="text-white font-bold text-[13px] leading-none">E-Perpustakaan</p>
-            <p className="text-emerald-400 text-[10px] font-semibold uppercase tracking-widest mt-0.5">Kejaksaan RI</p>
+            <p className="text-emerald-400 text-[10px] font-semibold uppercase tracking-widest mt-0.5">Kejaksaan Negeri Soppeng</p>
           </div>
         </div>
 
@@ -169,7 +169,7 @@ export default function LoginPage() {
             </div>
             <div>
               <p className="text-slate-900 font-bold text-[13px]">E-Perpustakaan</p>
-              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-widest">Kejaksaan RI</p>
+              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-widest">Kejaksaan Negeri Soppeng</p>
             </div>
           </div>
 
