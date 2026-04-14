@@ -90,10 +90,14 @@ export default async function PublicKatalogPage() {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-1">
-            {['Beranda', 'Koleksi', 'Layanan'].map((item, i) => (
+            {['Beranda', 'Koleksi', 'Layanan', 'Buku Tamu'].map((item, i) => (
               <Link
                 key={item}
-                href={i === 1 ? '#katalog' : i === 2 ? '#layanan' : '#'}
+                href={
+                  i === 1 ? '#katalog' : 
+                  i === 2 ? '#layanan' : 
+                  i === 3 ? '/buku-tamu' : '#'
+                }
                 className="px-4 py-2 rounded-xl text-[12px] font-semibold text-slate-500 hover:text-[#1B4332] hover:bg-emerald-50 transition-all"
               >
                 {item}

@@ -13,6 +13,7 @@ import ExportLaporan from './ExportLaporan';
 import BacaPDFModal from './BacaPDFModal';
 import ScanBukuModal from './ScanBukuModal';
 import QRCodeModal from './QRCodeModal';
+import Bukutamuadmintable from '../buku-tamu/components/Bukutamuadmintable'; 
 
 export const revalidate = 0;
 
@@ -74,6 +75,11 @@ export default async function DashboardPage(props: any) {
     .select('*')
     .order('created_at', { ascending: false });
 
+    const { data: bukuTamu } = await supabase
+    .from('buku_tamu')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   // ── Statistik ──────────────────────────────────────────────────────────
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
@@ -117,6 +123,7 @@ export default async function DashboardPage(props: any) {
     { tab: 'buku',      icon: '📚', label: 'Katalog Buku', badge: 0 },
     { tab: 'sirkulasi', icon: '🔄', label: 'Sirkulasi',    badge: overdueLoans.length },
     { tab: 'pegawai',   icon: '👥', label: 'Pegawai',      badge: pendingUsers },
+    { tab: 'bukutamu',  icon: '📖', label: 'Buku Tamu',    badge: 0 }, // Menu baru untuk Buku Tamu
   ];
 
   // ── Filter tabs untuk sirkulasi ────────────────────────────────────────
@@ -746,6 +753,7 @@ export default async function DashboardPage(props: any) {
                     </p>
                   </div>
                 </div>
+                
 
                 {/* Mobile cards */}
                 <div className="md:hidden divide-y divide-slate-50">
@@ -823,7 +831,15 @@ export default async function DashboardPage(props: any) {
                 </div>
               </div>
             )}
-
+{/* ════════════════════════
+                TAB: BUKU TAMU
+            ════════════════════════ */}
+            {activeTab === 'bukutamu' && (
+              <div className="animate-fade-in">
+                {/* 👇 UBAH BAGIAN INI */}
+                <Bukutamuadmintable entries={bukuTamu || []} />
+              </div>
+            )}
           </div>
         </main>
       </div>
