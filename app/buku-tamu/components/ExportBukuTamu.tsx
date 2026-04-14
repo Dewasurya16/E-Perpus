@@ -42,6 +42,18 @@ function getBidang(e: BukuTamuEntry) {
   return e.bidang || e.asal_instansi || '—';
 }
 
+// ── FIX: Flatten canvas ke background putih sebelum export ───
+function getCanvasDataUrlWithWhiteBg(canvas: HTMLCanvasElement): string {
+  const temp = document.createElement('canvas');
+  temp.width = canvas.width;
+  temp.height = canvas.height;
+  const ctx = temp.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, temp.width, temp.height);
+  ctx.drawImage(canvas, 0, 0);
+  return temp.toDataURL('image/png');
+}
+
 // ── Modal TTD Pegawai ─────────────────────────────────────────
 function PegawaiSignaturePad({
   onConfirm,
@@ -78,16 +90,25 @@ function PegawaiSignaturePad({
     };
 
     const onStart = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault(); isDrawing.current = true;
-      const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+      e.preventDefault();
+      isDrawing.current = true;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
     };
     const onMove = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault(); if (!isDrawing.current) return;
-      const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); setIsEmpty(false);
+      e.preventDefault();
+      if (!isDrawing.current) return;
+      const p = getPos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      setIsEmpty(false);
     };
     const onEnd = () => {
-      if (!isDrawing.current) return; isDrawing.current = false;
-      setTtdDataUrl(canvas.toDataURL('image/png'));
+      if (!isDrawing.current) return;
+      isDrawing.current = false;
+      // FIX: Flatten ke background putih agar TTD tampil di PDF
+      setTtdDataUrl(getCanvasDataUrlWithWhiteBg(canvas));
     };
 
     canvas.addEventListener('mousedown', onStart);
@@ -111,7 +132,8 @@ function PegawaiSignaturePad({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    setIsEmpty(true); setTtdDataUrl(null);
+    setIsEmpty(true);
+    setTtdDataUrl(null);
   };
 
   return (
@@ -153,7 +175,13 @@ function PegawaiSignaturePad({
                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">✍️ Tanda tangani di sini</p>
                 </div>
               )}
-              <canvas ref={canvasRef} width={400} height={100} className="w-full cursor-crosshair touch-none block" style={{ height: 100 }} />
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={120}
+                className="w-full cursor-crosshair touch-none block"
+                style={{ height: 120 }}
+              />
             </div>
             {!isEmpty && (
               <button type="button" onClick={handleClear} className="mt-1.5 text-[9px] font-black text-rose-400 hover:text-rose-600 uppercase tracking-widest">
@@ -183,6 +211,7 @@ function PegawaiSignaturePad({
 export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }) {
   const [mounted, setMounted] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -220,8 +249,9 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
     XLSX.writeFile(wb, `BukuTamu_KejariSoppeng_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // ── EXPORT PDF (Gaya Desain "Nomor 2") ──────────────────────
-  const generatePDF = ({
+  // ── EXPORT PDF (Kop Surat + TTD + Tabel Rapi) ────────────────
+  // FIX: Jadikan async agar bisa fetch logo seperti ExportLaporan
+  const generatePDF = async ({
     nama: namaPegawai,
     nip: nipPegawai,
     ttdDataUrl,
@@ -231,174 +261,226 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
     ttdDataUrl: string | null;
   }) => {
     setShowSignModal(false);
+    setIsExportingPDF(true);
 
-    // Kertas Landscape agar tabel Buku Tamu yang panjang bisa muat sempurna
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 15;
-
-    // ── Fungsi Header Bersih (Style Nomor 2) ──
-    const drawHeader = (isFirstPage: boolean) => {
-      if (!isFirstPage) {
-        doc.setFont('times', 'italic');
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text('Buku Tamu Perpustakaan (Lanjutan)', pageW / 2, margin - 5, { align: 'center' });
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(margin, margin - 2, pageW - margin, margin - 2);
-        return;
+    try {
+      // 1. Fetch logo dari public folder
+      let logoData: string | null = null;
+      try {
+        const res = await fetch('/logo-kejaksaan.png');
+        if (res.ok) {
+          const blob = await res.blob();
+          logoData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch {
+        console.warn('Logo tidak ditemukan, melanjutkan tanpa logo.');
       }
 
-      // --- JUDUL DOKUMEN ---
-      doc.setFont('times', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(30, 30, 30);
-      doc.text('REKAPITULASI BUKU TAMU PERPUSTAKAAN', pageW / 2, margin + 5, { align: 'center' });
-      
-      doc.setFontSize(11);
-      doc.text('KEJAKSAAN NEGERI SOPPENG', pageW / 2, margin + 11, { align: 'center' });
+      // 2. Kertas Landscape A4
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 15;
 
-      // Periode / Tanggal
+      // 3. Fungsi Kop Surat (sama persis dengan ExportLaporan, disesuaikan landscape)
+      const drawHeader = (isFirstPage: boolean) => {
+        if (!isFirstPage) {
+          doc.setFont('times', 'italic');
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text('Buku Tamu Perpustakaan — Kejaksaan Negeri Soppeng (Lanjutan)', pageW / 2, margin - 5, { align: 'center' });
+          doc.setDrawColor(15, 42, 28);
+          doc.setLineWidth(0.3);
+          doc.line(margin, margin - 2, pageW - margin, margin - 2);
+          return;
+        }
+
+        // --- KOP SURAT ---
+        doc.setTextColor(30, 30, 30);
+
+        // Logo
+        if (logoData) {
+          doc.addImage(logoData, 'PNG', margin + 2, margin, 22, 22);
+        }
+
+        // Teks Kop (centered di halaman landscape)
+        doc.setFont('times', 'bold');
+        doc.setFontSize(12);
+        doc.text('KEJAKSAAN REPUBLIK INDONESIA', pageW / 2, margin + 4, { align: 'center' });
+        doc.setFontSize(11);
+        doc.text('KEJAKSAAN TINGGI SULAWESI SELATAN', pageW / 2, margin + 10, { align: 'center' });
+        doc.setFontSize(13);
+        doc.text('KEJAKSAAN NEGERI SOPPENG', pageW / 2, margin + 16, { align: 'center' });
+
+        doc.setFont('times', 'normal');
+        doc.setFontSize(8);
+        doc.text(
+          'Jl. Samudra No.18, Lemba, Watansoppeng, Kabupaten Soppeng, Sulawesi Selatan 90811',
+          pageW / 2, margin + 21, { align: 'center' }
+        );
+        doc.text(
+          'Telp: 0853-9951-2452 | Website: https://kejari-soppeng.kejaksaan.go.id',
+          pageW / 2, margin + 25, { align: 'center' }
+        );
+
+        // Garis Ganda Pembatas Kop
+        doc.setDrawColor(30, 30, 30);
+        doc.setLineWidth(1.0);
+        doc.line(margin, margin + 29, pageW - margin, margin + 29); // Garis tebal
+        doc.setLineWidth(0.3);
+        doc.line(margin, margin + 30.5, pageW - margin, margin + 30.5); // Garis tipis
+
+        // Judul Dokumen
+        doc.setFont('times', 'bold');
+        doc.setFontSize(12);
+        doc.text('REKAPITULASI BUKU TAMU PERPUSTAKAAN', pageW / 2, margin + 40, { align: 'center' });
+
+        doc.setFont('times', 'normal');
+        doc.setFontSize(10);
+        const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        doc.text(`Per Tanggal: ${tanggalCetak}`, pageW / 2, margin + 46, { align: 'center' });
+      };
+
+      // 4. Data Tabel
+      const tableHead = [['No', 'Tanggal', 'Nama Pengunjung', 'Bidang / Instansi', 'Keperluan / Tujuan', 'Kritik / Saran', 'Tanda Tangan']];
+      const tableBody: any[][] = entries.map((e, i) => [
+        i + 1,
+        formatTanggalPendek(e.created_at),
+        e.nama,
+        getBidang(e),
+        e.keperluan,
+        e.pesan || '—',
+        '', // TTD placeholder — gambar disisipkan di didDrawCell
+      ]);
+
+      // 5. Render Tabel
+      autoTable(doc, {
+        startY: margin + 52,
+        head: tableHead,
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+          font: 'times',
+          fontSize: 9,
+          cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
+          valign: 'middle',
+          textColor: [40, 40, 40],
+          lineColor: [210, 220, 215],
+          lineWidth: 0.1,
+          minCellHeight: 18, // FIX: cukup tinggi untuk memuat gambar TTD pengunjung
+        },
+        headStyles: {
+          fillColor: [27, 67, 50],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [27, 67, 50],
+          lineWidth: 0.1,
+          minCellHeight: 10,
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10 },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 42 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 48 },
+          5: { cellWidth: 72 },
+          6: { cellWidth: 32, halign: 'center' },
+        },
+        alternateRowStyles: { fillColor: [248, 250, 249] },
+        margin: { left: margin, right: margin },
+
+        // FIX: Sisipkan gambar TTD pengunjung yang sudah tersimpan di database
+        didDrawCell: (data) => {
+          if (data.section === 'body' && data.column.index === 6 && data.row.index !== undefined) {
+            const entry = entries[data.row.index];
+            if (entry?.ttd_data) {
+              try {
+                const cellW = data.cell.width;
+                const cellH = data.cell.height;
+                const imgW = Math.min(cellW - 6, 26);
+                const imgH = Math.min(cellH - 4, 14);
+                const imgX = data.cell.x + (cellW - imgW) / 2;
+                const imgY = data.cell.y + (cellH - imgH) / 2;
+                doc.addImage(entry.ttd_data, 'PNG', imgX, imgY, imgW, imgH);
+              } catch (_) { /* skip jika TTD gagal dimuat */ }
+            }
+          }
+        },
+        didDrawPage: (data) => {
+          drawHeader(data.pageNumber === 1);
+        },
+      });
+
+      let finalY = (doc as any).lastAutoTable?.finalY ?? margin + 52;
+
+      // 6. Bagian Tanda Tangan Pengesahan Petugas
+      if (finalY > pageH - 50) {
+        doc.addPage();
+        drawHeader(false);
+        finalY = margin + 15;
+      }
+
+      const signWidth = 65;
+      const signX = pageW - margin - signWidth;
+      const signY = finalY + 15;
+
       doc.setFont('times', 'normal');
       doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      doc.text(`Dicetak pada: ${tanggalCetak}`, pageW / 2, margin + 17, { align: 'center' });
+      doc.setTextColor(30, 30, 30);
 
-      // Garis Pemisah Halus
-      doc.setDrawColor(50, 50, 50);
-      doc.setLineWidth(0.5);
-      doc.line(margin, margin + 22, pageW - margin, margin + 22);
-    };
+      const tglFormal = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      doc.text(`Soppeng, ${tglFormal}`, signX + signWidth / 2, signY, { align: 'center' });
+      doc.text('Petugas Perpustakaan,', signX + signWidth / 2, signY + 6, { align: 'center' });
 
-    // ── Data Tabel ────────────────────────────────────────────
-    const tableHead = [['No', 'Tanggal', 'Nama Pengunjung', 'Bidang / Instansi', 'Keperluan / Tujuan', 'Kritik / Saran', 'Tanda Tangan']];
-    const tableBody: any[][] = entries.map((e, i) => [
-      i + 1,
-      formatTanggalPendek(e.created_at),
-      e.nama,
-      getBidang(e),
-      e.keperluan,
-      e.pesan || '—',
-      '', // TTD placeholder agar baris punya ruang
-    ]);
+      // FIX: Tempel TTD petugas dari modal (sudah di-flatten ke background putih)
+      if (ttdDataUrl) {
+        try {
+          doc.addImage(ttdDataUrl, 'PNG', signX + signWidth / 2 - 22, signY + 8, 44, 18);
+        } catch (_) { /* skip */ }
+      }
 
-    // ── Render Tabel Rapi ─────────────────────────────────────
-    autoTable(doc, {
-      startY: margin + 28, // Mulai tepat di bawah garis pemisah
-      head: tableHead,
-      body: tableBody,
-      theme: 'grid',
-      styles: {
-        font: 'times',
-        fontSize: 9,
-        cellPadding: { top: 4, right: 4, bottom: 4, left: 4 }, // Jarak tulisan lega
-        valign: 'middle',
-        textColor: [40, 40, 40],
-        lineColor: [210, 220, 215], // Garis abu-abu kehijauan lembut
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: [27, 67, 50], // Hijau Kejaksaan
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [27, 67, 50],
-        lineWidth: 0.1,
-      },
-      columnStyles: {
-        // Total Lebar Kertas A4 Landscape = 297mm. Sisa untuk tabel = 267mm.
-        0: { halign: 'center', cellWidth: 10 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 40 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 45 },
-        5: { cellWidth: 80 }, // Ruang paling besar untuk membaca kritik/saran
-        6: { cellWidth: 32, halign: 'center' },
-      },
-      alternateRowStyles: { fillColor: [248, 250, 249] }, // Baris selang-seling warna soft
-      margin: { left: margin, right: margin },
-      
-      // Sisipkan gambar tanda tangan asli dari pengunjung ke dalam sel PDF
-      didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 6 && data.row.index !== undefined) {
-          const entry = entries[data.row.index];
-          if (entry?.ttd_data) {
-            try {
-              const cellW = data.cell.width;
-              const cellH = data.cell.height;
-              // Batasi ukuran gambar TTD
-              const imgW = Math.min(cellW - 4, 26);
-              const imgH = Math.min(cellH - 4, 12);
-              const imgX = data.cell.x + (cellW - imgW) / 2;
-              const imgY = data.cell.y + (cellH - imgH) / 2;
-              doc.addImage(entry.ttd_data, 'PNG', imgX, imgY, imgW, imgH);
-            } catch (_) { /* skip jika TTD gagal dimuat */ }
-          }
-        }
-      },
-      didDrawPage: (data) => {
-        drawHeader(data.pageNumber === 1);
-      },
-    });
+      // Garis nama
+      doc.setDrawColor(30, 30, 30);
+      doc.setLineWidth(0.3);
+      doc.line(signX, signY + 30, signX + signWidth, signY + 30);
 
-    let finalY = (doc as any).lastAutoTable?.finalY ?? margin + 28;
+      doc.setFont('times', 'bold');
+      doc.setFontSize(9);
+      doc.text(
+        namaPegawai || '(                                              )',
+        signX + signWidth / 2, signY + 34, { align: 'center' }
+      );
 
-    // ── Bagian Tanda Tangan Pengesahan ────────────────────────
-    if (finalY > pageH - 45) {
-      doc.addPage();
-      drawHeader(false);
-      finalY = margin + 15;
-    }
-
-    const signWidth = 60;
-    const signX = pageW - margin - signWidth; // Diposisikan rata kanan margin
-    const signY = finalY + 15;
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(30, 30, 30);
-    
-    const tglFormal = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.text(`Soppeng, ${tglFormal}`, signX + (signWidth/2), signY, { align: 'center' });
-    doc.text('Petugas Perpustakaan,', signX + (signWidth/2), signY + 6, { align: 'center' });
-    
-    // Jika petugas membubuhkan TTD dari modal, tempel di sini
-    if (ttdDataUrl) {
-      try {
-        doc.addImage(ttdDataUrl, 'PNG', signX + (signWidth/2) - 20, signY + 8, 40, 15);
-      } catch (_) { /* skip */ }
-    }
-
-    // Garis untuk nama & NIP
-    doc.setDrawColor(30, 30, 30);
-    doc.setLineWidth(0.3);
-    doc.line(signX, signY + 28, signX + signWidth, signY + 28);
-    
-    doc.setFont('times', 'bold');
-    doc.setFontSize(9);
-    doc.text(namaPegawai || '(                                             )', signX + (signWidth/2), signY + 32, { align: 'center' });
-    
-    doc.setFont('times', 'normal');
-    doc.setFontSize(8);
-    if (nipPegawai) {
-      doc.text(`NIP. ${nipPegawai}`, signX + (signWidth/2), signY + 36, { align: 'center' });
-    }
-
-    // ── FOOTER NOMOR HALAMAN ──────────────────────────────────
-    const totalPages = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFont('times', 'italic');
+      doc.setFont('times', 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Halaman ${i} dari ${totalPages}`, pageW - margin, pageH - 10, { align: 'right' });
-    }
+      if (nipPegawai) {
+        doc.text(`NIP. ${nipPegawai}`, signX + signWidth / 2, signY + 38, { align: 'center' });
+      }
 
-    doc.save(`BukuTamu_KejariSoppeng_${new Date().toISOString().split('T')[0]}.pdf`);
+      // 7. Footer Nomor Halaman
+      const totalPages = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont('times', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Halaman ${i} dari ${totalPages}`, pageW - margin, pageH - 8, { align: 'right' });
+        doc.text('Perpustakaan Kejaksaan Negeri Soppeng', margin, pageH - 8);
+      }
+
+      doc.save(`BukuTamu_KejariSoppeng_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Gagal membuat PDF:', error);
+      alert('Terjadi kesalahan saat membuat PDF.');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   return (
@@ -407,7 +489,8 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
         {/* Tombol Excel */}
         <button
           onClick={handleExportExcel}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-white text-[#1B4332] border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95"
+          disabled={isExportingPDF}
+          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-white text-[#1B4332] border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
         >
           <span className="text-base">📊</span> Excel
         </button>
@@ -415,9 +498,18 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
         {/* Tombol PDF Resmi */}
         <button
           onClick={() => setShowSignModal(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-[#1B4332] hover:bg-[#143628] text-white border border-[#143628] rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md hover:shadow-emerald-900/20 active:scale-95"
+          disabled={isExportingPDF}
+          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-[#1B4332] hover:bg-[#143628] text-white border border-[#143628] rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md hover:shadow-emerald-900/20 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
         >
-          <span className="text-base">📄</span> Cetak PDF
+          {isExportingPDF ? (
+            <>
+              <span className="animate-spin text-base">⏳</span> Memproses...
+            </>
+          ) : (
+            <>
+              <span className="text-base">📄</span> Cetak PDF
+            </>
+          )}
         </button>
       </div>
 
