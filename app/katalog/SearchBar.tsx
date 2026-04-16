@@ -14,6 +14,7 @@ export default function SearchBar() {
       const params = new URLSearchParams(searchParams.toString());
       if (searchTerm) {
         params.set('q', searchTerm);
+        params.delete('page'); // <--- TAMBAHKAN INI: Reset ke hal 1 saat cari
       } else {
         params.delete('q');
       }

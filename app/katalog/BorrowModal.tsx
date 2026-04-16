@@ -18,197 +18,195 @@ export default function BorrowModal({ book, userEmail }: { book: any; userEmail:
   useEffect(() => {
     setMounted(true);
 
-    // Coba ambil nama asli dari tabel "Data Pegawai" agar sinkron dengan booking Lexi
     const fetchStaffName = async () => {
       const { data } = await supabase
         .from('Data Pegawai')
         .select('Nama')
-        .ilike('Email', `%${autoName}%`)  // cocokkan prefix email
+        .ilike('Email', `%${autoName}%`)
         .limit(1)
         .single();
       if (data?.Nama) {
         setStaffName(data.Nama);
       }
     };
-    fetchStaffName();
+    
+    if (autoName) {
+       fetchStaffName();
+    }
   }, [autoName]);
 
   const displayName = staffName || autoName;
 
-  const [formData, setFormData] = useState({ nip: "", days: 7 });
+  const [formData, setFormData] = useState({
+    nama_peminjam: displayName,
+    tanggal_pinjam: new Date().toISOString().split('T')[0],
+    tanggal_kembali: '',
+    keperluan: ''
+  });
 
-  const handleBorrow = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (displayName) {
+      setFormData(prev => ({ ...prev, nama_peminjam: displayName }));
+    }
+  }, [displayName]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading) return; // guard double-submit
+    e.stopPropagation();
     setIsLoading(true);
-
+    
     try {
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + formData.days);
+      // 1. Cek Stok ke Database
+      const { data: currentBook, error: errCek } = await supabase
+        .from('books')
+        .select('stock')
+        .eq('id', book.id)
+        .single();
 
-      // Insert ke loans — status UPPERCASE agar konsisten dengan sistem Lexi & admin
-      const { error: loanError } = await supabase.from("loans").insert([{
-        book_id:       book.id,
-        employee_name: displayName,       // nama asli dari Data Pegawai (atau prefix email)
-        employee_nip:  formData.nip,
-        due_date:      dueDate.toISOString(),
-        status:        "DIPINJAM",        // ← UPPERCASE, konsisten dengan route-chat.ts
-        borrowed_via:  "KATALOG",         // ← penanda sumber peminjaman
-        user_email:    userEmail,         // ← simpan email agar History bisa query dengan tepat
-      }]);
+      if (errCek) throw new Error("Gagal mengecek stok buku.");
+      if (currentBook.stock <= 0) {
+        alert("Maaf, stok buku sudah habis dipinjam.");
+        setIsLoading(false);
+        return;
+      }
 
-      if (loanError) throw new Error(loanError.message);
+      // 2. Kurangi stok di tabel books
+      const { error: errorUpdate } = await supabase
+        .from('books')
+        .update({ stock: currentBook.stock - 1 })
+        .eq('id', book.id);
+        
+      if (errorUpdate) throw new Error("Gagal mengupdate stok database.");
 
-      // Kurangi stok buku
-      const { error: stockError } = await supabase
-        .from("books")
-        .update({ stock: book.stock - 1 })
-        .eq("id", book.id);
+      // 3. Masukkan data ke riwayat peminjaman
+      const { error: errorInsert } = await supabase
+        .from('Katalog_Peminjaman')
+        .insert([{
+          book_id: book.id,
+          user_email: userEmail,
+          nama_peminjam: formData.nama_peminjam,
+          tanggal_pinjam: formData.tanggal_pinjam,
+          tanggal_kembali: formData.tanggal_kembali,
+          keperluan: formData.keperluan,
+          status: 'DIPINJAM'
+        }]);
+        
+      if (errorInsert) throw new Error("Gagal mencatat peminjaman: " + errorInsert.message);
 
-      if (stockError) throw new Error(stockError.message);
-
+      // Jika berhasil
       setIsSuccess(true);
       router.refresh();
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSuccess(false);
-        setFormData({ nip: "", days: 7 });
-      }, 2200);
+      
     } catch (error: any) {
       console.error(error);
-      alert("Gagal memproses pinjaman: " + error.message);
+      // MUNCULKAN ERROR KE LAYAR JIKA GAGAL (Sangat penting untuk Debug)
+      alert("Error Sistem: " + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
-
-        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">Konfirmasi Pinjaman</h3>
-            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">Kejaksaan Republik Indonesia</p>
-          </div>
-          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-rose-600 font-bold transition-all text-lg">✕</button>
-        </div>
-
-        <div className="p-8">
-          {isSuccess ? (
-            <div className="text-center py-10">
-              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl shadow-[0_0_40px_rgba(16,185,129,0.2)]">✓</div>
-              <h4 className="text-2xl font-black text-slate-800">Berhasil!</h4>
-              <p className="text-sm font-medium text-slate-500 mt-2">
-                Buku dicatat atas nama <span className="font-bold text-slate-800">{displayName}</span>.
-              </p>
-              <p className="text-[10px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">
-                Cek di Riwayat Pinjaman ↓
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleBorrow} className="space-y-6">
-              {/* Info buku */}
-              <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex gap-4 items-center">
-                <div className="w-10 h-14 bg-[#1B4332] rounded-lg flex-shrink-0 flex items-center justify-center text-white text-lg shadow-md">📖</div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Aset Referensi</p>
-                  <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{book.title}</p>
-                  {book.rak && <p className="text-[9px] text-slate-400 font-bold mt-0.5">📍 Rak {book.rak}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Nama otomatis — read-only */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Peminjam</label>
-                  <div className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm text-slate-600 flex items-center gap-2">
-                    <span className="w-5 h-5 bg-emerald-600 rounded-full text-white text-[9px] flex items-center justify-center font-black flex-shrink-0">
-                      {displayName.charAt(0).toUpperCase()}
-                    </span>
-                    {displayName}
-                  </div>
-                </div>
-
-                {/* NIP */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">NIP Pegawai</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Wajib diisi..."
-                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#1B4332] focus:ring-2 focus:ring-[#1B4332]/10 rounded-xl outline-none transition-all font-bold text-sm text-slate-800"
-                    value={formData.nip}
-                    onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
-                  />
-                </div>
-
-                {/* Durasi */}
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Durasi Pinjaman</label>
-                  <select
-                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#1B4332] focus:ring-2 focus:ring-[#1B4332]/10 rounded-xl outline-none font-bold text-sm text-slate-800 transition-all"
-                    value={formData.days}
-                    onChange={(e) => setFormData({ ...formData, days: Number(e.target.value) })}
-                  >
-                    <option value={7}>7 Hari (Standar)</option>
-                    <option value={14}>14 Hari (Diperpanjang)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Tenggat preview */}
-              <div className="px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-2">
-                <span className="text-amber-500">📅</span>
-                <p className="text-[11px] font-bold text-amber-700">
-                  Tenggat pengembalian:{" "}
-                  <span className="font-black">
-                    {new Date(Date.now() + formData.days * 86400000).toLocaleDateString("id-ID", {
-                      weekday: "long", day: "2-digit", month: "long", year: "numeric",
-                    })}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-6 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all border border-slate-200"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 bg-[#1B4332] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#143628] transition-all disabled:opacity-50 py-4 flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                      Memproses...
-                    </>
-                  ) : "Konfirmasi & Pinjam"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  if (!mounted) return null;
 
   return (
     <>
       <button
-        onClick={() => { if (book.stock > 0) setIsOpen(true); }}
+        onClick={(e) => {
+          // CEGAH BENTROK KLIK DENGAN ELEMEN LAIN
+          e.preventDefault();
+          e.stopPropagation();
+          if (book.stock > 0) setIsOpen(true);
+        }}
         disabled={book.stock === 0}
-        className="w-full bg-slate-900 text-white px-4 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 transition-all shadow-md"
+        className="w-full bg-slate-900 text-white px-4 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
       >
-        {book.stock > 0 ? "📚 Pinjam Buku Fisik" : "Stok Sedang Kosong"}
+        {book.stock > 0 ? (
+          <><span>🔖</span> Pinjam Buku</>
+        ) : (
+          <><span>❌</span> Habis</>
+        )}
       </button>
 
-      {mounted && isOpen ? createPortal(modalContent, document.body) : null}
+      {isOpen && createPortal(
+        // Z-INDEX DIGANTI KE 999999 AGAR SELALU DI DEPAN MODAL SCANNER
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+          
+          <div className="relative bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {isSuccess ? (
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-[0_0_40px_rgba(16,185,129,0.4)] animate-bounce">
+                  ✓
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">Berhasil Dipinjam!</h3>
+                <p className="text-slate-500 text-[13px] mb-8 font-medium">
+                  Buku <strong>{book.title}</strong> telah dicatat ke akun Anda. Silakan ambil fisik buku di perpustakaan.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    setIsSuccess(false);
+                    router.refresh();
+                  }}
+                  className="w-full bg-slate-100 text-slate-600 font-bold uppercase tracking-widest text-[11px] py-4 rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Tutup & Selesai
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                {/* Header */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">Form Peminjaman</span>
+                      <h3 className="text-base font-black text-slate-800 leading-snug line-clamp-2">{book.title}</h3>
+                    </div>
+                    <button type="button" onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-50 shrink-0">✕</button>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-5 overflow-y-auto hide-scrollbar">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Peminjam</label>
+                    <input type="text" readOnly value={formData.nama_peminjam} className="w-full bg-slate-50 border border-slate-200 text-slate-600 px-4 py-3.5 rounded-xl text-sm font-bold focus:outline-none" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Tgl Pinjam</label>
+                      <input type="date" required value={formData.tanggal_pinjam} onChange={e => setFormData({...formData, tanggal_pinjam: e.target.value})} className="w-full bg-white border border-slate-200 text-slate-800 px-4 py-3.5 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Tgl Kembali</label>
+                      <input type="date" required value={formData.tanggal_kembali} onChange={e => setFormData({...formData, tanggal_kembali: e.target.value})} min={formData.tanggal_pinjam} className="w-full bg-white border border-slate-200 text-slate-800 px-4 py-3.5 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Keperluan (Opsional)</label>
+                    <textarea rows={2} value={formData.keperluan} onChange={e => setFormData({...formData, keperluan: e.target.value})} placeholder="Misal: Referensi Sidang, Tugas, dll..." className="w-full bg-white border border-slate-200 text-slate-800 px-4 py-3.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all placeholder:text-slate-300 resize-none" />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-slate-100 bg-white mt-auto">
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setIsOpen(false)} className="w-1/3 bg-white text-slate-600 font-bold uppercase tracking-widest text-[10px] py-4 rounded-xl hover:bg-slate-50 transition-all border border-slate-200">
+                      Batal
+                    </button>
+                    <button type="submit" disabled={isLoading} className="flex-1 bg-[#1B4332] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#143628] transition-all disabled:opacity-50 py-4 flex items-center justify-center gap-2">
+                      {isLoading ? "Memproses..." : "Konfirmasi & Pinjam"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
