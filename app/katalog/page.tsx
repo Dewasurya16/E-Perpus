@@ -181,7 +181,7 @@ export default async function KatalogPage(props: any) {
                 <Suspense fallback={<div className="h-[52px] w-36 bg-white/8 rounded-2xl animate-pulse" />}>
                   <SortDropdown />
                 </Suspense>
-                <ScanBukuModal isLoggedIn={true} />
+               <ScanBukuModal isLoggedIn={true} userEmail={userEmail} />
               </div>
             </div>
           </div>
