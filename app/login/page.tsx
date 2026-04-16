@@ -194,7 +194,7 @@ export default function LoginPage() {
               <input
                 type="email" required
                 className="input-field"
-                placeholder="nama@knsoppeng.com"
+                placeholder="nama@kejari-soppeng.go.id"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -247,16 +247,8 @@ export default function LoginPage() {
             </div>
           </form>
 
+          {/* Tombol kembali */}
           <div className="anim-up-d4 mt-8 pt-6 border-t border-slate-200 text-center">
-            <p className="text-[13px] text-slate-500 font-medium">
-              Belum punya akun?{' '}
-              <Link href="/register" className="text-[#1B4332] font-bold hover:underline underline-offset-2">
-                Daftar di sini
-              </Link>
-            </p>
-          </div>
-
-          <div className="anim-up-d4 mt-6 text-center">
             <Link href="/" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               Kembali ke E-Katalog Publik

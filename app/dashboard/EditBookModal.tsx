@@ -15,15 +15,16 @@ function Spinner({ dark = false }: { dark?: boolean }) {
 }
 
 export default function EditBookModal({ book }: { book: any }) {
-  const [isOpen,    setIsOpen]    = useState(false);
-  const [title,     setTitle]     = useState(book.title     || '');
-  const [author,    setAuthor]    = useState(book.author    || '');
-  const [publisher, setPublisher] = useState(book.publisher || '');
-  const [category,  setCategory]  = useState(book.category  || '');
-  const [stock,     setStock]     = useState(book.stock     || 0);
-  const [rak,       setRak]       = useState(book.rak       || '');
-  const [pdfUrl,    setPdfUrl]    = useState(book.pdf_url   || '');
-  const [loading,   setLoading]   = useState(false);
+  const [isOpen,     setIsOpen]     = useState(false);
+  const [title,      setTitle]      = useState(book.title     || '');
+  const [author,     setAuthor]     = useState(book.author    || '');
+  const [publisher,  setPublisher]  = useState(book.publisher || '');
+  const [category,   setCategory]   = useState(book.category  || '');
+  const [nomorBuku,  setNomorBuku]  = useState(book.nomor_buku || '');
+  const [stock,      setStock]      = useState(book.stock     || 0);
+  const [rak,        setRak]        = useState(book.rak       || '');
+  const [pdfUrl,     setPdfUrl]     = useState(book.pdf_url   || '');
+  const [loading,    setLoading]    = useState(false);
   const router = useRouter();
 
   const handleEditBook = async (e: React.FormEvent) => {
@@ -31,7 +32,7 @@ export default function EditBookModal({ book }: { book: any }) {
     setLoading(true);
     const { error } = await supabase
       .from('books')
-      .update({ title, author, publisher, category, stock, rak, pdf_url: pdfUrl })
+      .update({ title, author, publisher, category, nomor_buku: nomorBuku, stock, rak, pdf_url: pdfUrl })
       .eq('id', book.id);
     setLoading(false);
     if (!error) { setIsOpen(false); router.refresh(); }
@@ -70,6 +71,21 @@ export default function EditBookModal({ book }: { book: any }) {
                   className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
               </div>
 
+              {/* Nomor Buku + Kategori */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor Buku</label>
+                  <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
+                    placeholder="Contoh: 001" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
+                  <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Penulis</label>
@@ -85,30 +101,23 @@ export default function EditBookModal({ book }: { book: any }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
-                  <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
-                </div>
-                <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sisa Stok</label>
                   <input required type="number" min="0" value={stock} onChange={(e) => setStock(Number(e.target.value))}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lokasi Rak</label>
                   <input type="text" value={rak} onChange={(e) => setRak(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
                     placeholder="Contoh: A-1" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Link E-Book (PDF)</label>
-                  <input type="url" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
-                    placeholder="https://..." />
-                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Link E-Book (PDF)</label>
+                <input type="url" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)}
+                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
+                  placeholder="https://..." />
               </div>
 
               <div className="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">

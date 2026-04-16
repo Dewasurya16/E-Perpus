@@ -6,8 +6,15 @@ import Link from 'next/link';
 
 import { supabase } from '../../lib/supabase';
 import BacaPDFModal from './BacaPDFModal';
+import BorrowModal from '../katalog/BorrowModal';
 
-export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+export default function ScanBukuModal({
+  isLoggedIn = false,
+  userEmail = '',
+}: {
+  isLoggedIn?: boolean;
+  userEmail?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [scannedBook, setScannedBook] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -92,13 +99,10 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
               </div>
               <div className="space-y-3">
                 <BacaPDFModal url={scannedBook.pdf_url} />
-                {isLoggedIn ? (
-                  <Link
-                    href="/dashboard?tab=buku"
-                    className="flex items-center justify-center w-full bg-[#1B4332] text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-[#123023] transition-all"
-                  >
-                    Pinjam Aset
-                  </Link>
+
+                {/* Pinjam langsung jika sudah login, jika belum arahkan ke login */}
+                {isLoggedIn && userEmail ? (
+                  <BorrowModal book={scannedBook} userEmail={userEmail} />
                 ) : (
                   <Link
                     href="/login"
@@ -107,6 +111,7 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
                     🔐 Login & Pinjam
                   </Link>
                 )}
+
                 <button
                   onClick={() => setScannedBook(null)}
                   className="w-full bg-slate-100 text-slate-500 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-200 transition-colors border border-slate-200"
@@ -136,7 +141,6 @@ export default function ScanBukuModal({ isLoggedIn = false }: { isLoggedIn?: boo
 
   return (
     <>
-      {/* ── FLOATING BUTTON — aligned with AI button (bottom-6) ── */}
       <button
         onClick={() => {
           setIsOpen(true);
