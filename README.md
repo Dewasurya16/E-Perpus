@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 E-Perpustakaan Kejaksaan Negeri Soppeng
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-blue?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
 
-First, run the development server:
+Aplikasi Manajemen Perpustakaan Digital modern yang dirancang khusus untuk internal **Kejaksaan Negeri Soppeng**. Sistem ini mengintegrasikan kecerdasan buatan (AI) untuk mempermudah pelayanan sirkulasi buku bagi para pegawai.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🌟 Fitur Utama
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 🤖 1. Lexi - AI Librarian Assistant
+Fitur unggulan yang memungkinkan pegawai melakukan **booking buku melalui chat**. Lexi dapat:
+- Mencari judul buku secara cerdas.
+- Memverifikasi data pegawai secara otomatis.
+- Melakukan transaksi peminjaman langsung ke database.
+- Memberikan informasi tenggat waktu pengembalian.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 📋 2. Buku Tamu Digital & Export PDF
+Sistem pencatatan kunjungan harian yang dilengkapi dengan fitur:
+- Formulir kunjungan untuk tamu dan pegawai.
+- **Export Laporan PDF** secara instan dengan format resmi untuk pelaporan pimpinan.
 
-## Learn More
+### 📊 3. Dashboard Admin & Sirkulasi
+- Manajemen data buku (stok, kategori, lokasi rak).
+- Pemantauan status peminjaman (Dipinjam/Dikembalikan).
+- Manajemen data pegawai internal.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Arsitektur Teknologi
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend:** Next.js 15 (App Router) & Tailwind CSS.
+- **Backend as a Service:** Supabase (PostgreSQL & Auth).
+- **AI Core:** Google Gemini AI SDK (Gemini 1.5/2.0 Flash).
+- **PDF Engine:** jsPDF & jsPDF-AutoTable.
+- **State Management:** React Hooks (useState, useEffect).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚀 Cara Instalasi Lokal
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone Repositori**
+   ```bash
+   git clone [https://github.com/username/perpustakaan-kantor.git](https://github.com/username/perpustakaan-kantor.git)
+   cd perpustakaan-kantor
