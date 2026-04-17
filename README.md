@@ -45,3 +45,42 @@ Sistem pencatatan kunjungan harian yang dilengkapi dengan fitur:
    ```bash
    git clone [https://github.com/username/perpustakaan-kantor.git](https://github.com/username/perpustakaan-kantor.git)
    cd perpustakaan-kantor
+   Install Dependensi
+    Bash
+
+    npm install
+
+    Pengaturan Environment Variable
+    Buat file .env.local dan isi dengan kredensial berikut:
+    Code snippet
+
+    NEXT_PUBLIC_SUPABASE_URL=isi_url_supabase_anda
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=isi_anon_key_anda
+    GEMINI_API_KEY=isi_api_key_gemini_anda
+
+    Menjalankan Aplikasi
+    Bash
+
+    npm run dev
+
+    Akses di http://localhost:3000
+
+📂 Struktur Database Utama
+
+Aplikasi ini berjalan di atas beberapa tabel Supabase berikut:
+
+    books: Data koleksi buku, lokasi rak, dan stok.
+
+    Data Pegawai: Database master pegawai internal.
+
+    loans: Data transaksi peminjaman aktif.
+
+    buku_tamu: Log data kunjungan harian.
+
+    booking_ai: Log khusus untuk transaksi yang diproses melalui asisten AI.
+
+⚖️ Hak Cipta & Lisensi
+
+Dikembangkan oleh Dewa Sinar Surya, S.Kom Pranata Komputer Kejaksaan Negeri Soppeng. Penggunaan kode ini ditujukan untuk lingkungan internal Kejaksaan Republik Indonesia.
+
+Dibuat dengan ❤️ untuk kemajuan IT Kejaksaan RI
