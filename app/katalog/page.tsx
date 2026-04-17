@@ -12,6 +12,7 @@ import ProfileMenu from '../ProfileMenu';
 import BacaPDFModal from '../dashboard/BacaPDFModal';
 import ScanBukuModal from '../dashboard/ScanBukuModal';
 import QRCodeModal from '../dashboard/QRCodeModal';
+import Image from 'next/image';
 import PaginationControls from './components/PaginationControls'; // <-- Import komponen Paginasi baru
 
 export const dynamic = 'force-dynamic';
@@ -100,16 +101,21 @@ export default async function KatalogPage(props: any) {
           backgroundSize: '128px',
         }}
       />
-
-      {/* ── STICKY HEADER ── */}
+{/* ── STICKY HEADER ── */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/50 shadow-[0_1px_24px_rgba(0,0,0,0.06)]">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#1B4332] rounded-lg flex items-center justify-center shadow-sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-              </svg>
+            {/* 👇 BAGIAN LOGO KEJAKSAAN YANG BARU 👇 */}
+            <div className="w-9 h-9 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+              <Image 
+                src="/logo-kejaksaan.png" 
+                alt="Logo Kejaksaan" 
+                fill
+                className="object-contain rounded-full"
+              />
             </div>
+            {/* 👆 SELESAI BAGIAN LOGO 👆 */}
+            
             <div className="leading-none">
               <span className="text-[13px] font-black text-slate-900 tracking-tight">E-Perpus</span>
               <span className="mx-2 text-slate-300">·</span>
@@ -119,7 +125,6 @@ export default async function KatalogPage(props: any) {
           <ProfileMenu email={userEmail} role={userRole} />
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-5 sm:px-10 relative z-10">
 
         {/* ── HERO ── */}
@@ -295,15 +300,23 @@ export default async function KatalogPage(props: any) {
                       <h3 className="text-[12.5px] font-black text-slate-800 line-clamp-2 leading-snug mb-1 group-hover:text-[#1B4332] transition-colors duration-200">
                         {book.title}
                       </h3>
-                      <p className="text-[9.5px] text-slate-400 font-semibold mb-1 truncate">
+                     <p className="text-[9.5px] text-slate-400 font-semibold mb-1 truncate">
                         {book.author || 'Tim Kejaksaan'}
                       </p>
                       {book.publisher && (
                         <p className="text-[8.5px] text-slate-300 font-medium truncate">{book.publisher}</p>
                       )}
 
-                      <div className="my-3.5 border-t border-slate-100" />
+                      {/* ── BAGIAN RINGKASAN BUKU DIMULAI DI SINI ── */}
+                      <div className="mt-2.5 p-2.5 bg-slate-50/80 border border-slate-100/80 rounded-lg group-hover:bg-emerald-50/50 group-hover:border-emerald-100 transition-colors">
+                        <p className="text-[9px] text-slate-500 leading-relaxed line-clamp-3">
+                          {/* Kita gunakan book.ringkasan atau book.bidang_bb buat berjaga-jaga jika nama kolom belum berubah di database */}
+                          {book.ringkasan || book.bidang_bb || "Belum ada ringkasan untuk buku ini."}
+                        </p>
+                      </div>
+                      {/* ── BAGIAN RINGKASAN BUKU SELESAI ── */}
 
+                      <div className="my-3.5 border-t border-slate-100" />
                       <div className="mt-auto space-y-2">
                         <div className="grid grid-cols-2 gap-2">
                           <BacaPDFModal url={book.pdf_url} />

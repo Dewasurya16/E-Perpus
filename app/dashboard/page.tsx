@@ -14,7 +14,12 @@ import BacaPDFModal from './BacaPDFModal';
 import ScanBukuModal from './ScanBukuModal';
 import QRCodeModal from './QRCodeModal';
 import Bukutamuadmintable from '../buku-tamu/components/Bukutamuadmintable'; 
+import SirkulasiTable from './Sirkulasitable';
+import PegawaiTable from './PegawaiTable';
+import Image from 'next/image';
 
+// 👇 TAMBAHAN UNTUK MEMATIKAN CACHE NEXT.JS 👇
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // ── Helper: warna badge status ─────────────────────────────────────────────
@@ -141,11 +146,13 @@ export default async function DashboardPage(props: any) {
           SIDEBAR
       ══════════════════════════════════════════ */}
       <aside className="hidden lg:flex flex-col w-[260px] bg-white border-r border-slate-200/60 z-50 flex-shrink-0">
-        <div className="h-20 flex items-center gap-4 px-7 border-b border-slate-100">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#0f2e22] to-[#1B4332] rounded-xl flex items-center justify-center shadow-lg ring-2 ring-emerald-50">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-            </svg>
+        <div className="h-20 flex items-center gap-4 px-7 border-b border-slate-100"><div className="w-10 h-10 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+            <Image 
+              src="/logo-kejaksaan.png" 
+              alt="Logo Kejaksaan" 
+              fill
+              className="object-contain rounded-full"
+            />
           </div>
           <div>
             <h1 className="text-sm font-black uppercase tracking-tight text-slate-900 leading-none">E-Perpus</h1>
@@ -210,8 +217,13 @@ export default async function DashboardPage(props: any) {
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-8 z-40 flex-shrink-0">
           <div className="lg:hidden flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#1B4332] rounded-lg flex items-center justify-center">
-              <span className="text-white font-black text-[10px]">EP</span>
+           <div className="w-8 h-8 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+              <Image 
+                src="/logo-kejaksaan.png" 
+                alt="Logo Kejaksaan" 
+                fill
+                className="object-contain rounded-full"
+              />
             </div>
             <h1 className="text-sm font-black uppercase text-slate-800">Dasbor Admin</h1>
           </div>
@@ -599,143 +611,11 @@ export default async function DashboardPage(props: any) {
                   ))}
                 </div>
 
-                {/* Tabel */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
-                  {/* Mobile cards */}
-                  <div className="md:hidden divide-y divide-slate-50">
-                    {enrichedLoans.length === 0 ? (
-                      <p className="p-10 text-center text-slate-400 text-sm font-bold">Tidak ada data untuk filter ini.</p>
-                    ) : enrichedLoans.map(loan => (
-                      <div key={loan.id} className={`p-5 space-y-3 ${loan._isLate ? 'bg-rose-50/30' : ''}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                              <p className="font-bold text-slate-800 text-sm">{loan.employee_name}</p>
-                              <SourceBadge via={loan.borrowed_via} />
-                            </div>
-                            <p className="text-[10px] text-slate-500 truncate">{loan.books?.title}</p>
-                            {loan.user_email && (
-                              <p className="text-[9px] text-slate-400 font-medium mt-0.5">{loan.user_email}</p>
-                            )}
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border tracking-widest flex-shrink-0 ${loanBadge(loan._isLate ? 'TERLAMBAT' : loan.status)}`}>
-                            {loan._isLate ? '⚠️ Telat' : loan.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-bold">
-                              Tenggat: <span className={`font-black ${loan._isLate ? 'text-rose-600' : 'text-slate-700'}`}>
-                                {new Date(loan.due_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                              </span>
-                            </p>
-                            {loan._isLate && (
-                              <p className="text-[9px] font-black text-rose-500 mt-0.5">
-                                {Math.floor((Date.now() - new Date(loan.due_date).getTime()) / 86400000)} hari terlambat
-                              </p>
-                            )}
-                          </div>
-                          <ReturnButton loan={loan} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          {['Peminjam & Sumber', 'Aset Referensi', 'Tenggat', 'NIP', 'Status', 'Aksi'].map(h => (
-                            <th key={h} className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {enrichedLoans.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="text-center py-16 text-slate-400 font-bold text-sm">
-                              Tidak ada data untuk filter ini.
-                            </td>
-                          </tr>
-                        ) : enrichedLoans.map(loan => (
-                          <tr key={loan.id} className={`hover:bg-slate-50/80 transition-colors ${loan._isLate ? 'bg-rose-50/20' : ''}`}>
-                            {/* Peminjam + sumber */}
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-[#1B4332] rounded-full flex items-center justify-center text-white text-[11px] font-black flex-shrink-0">
-                                  {loan.employee_name?.charAt(0)?.toUpperCase() || '?'}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-slate-800 leading-none">{loan.employee_name}</p>
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <SourceBadge via={loan.borrowed_via} />
-                                    {loan.user_email && (
-                                      <span className="text-[8px] text-slate-400 font-medium truncate max-w-[100px]">{loan.user_email}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Buku */}
-                            <td className="px-6 py-4 text-slate-600 max-w-[180px]">
-                              <p className="font-medium truncate italic">"{loan.books?.title || '—'}"</p>
-                              {loan.books?.rak && (
-                                <p className="text-[9px] text-slate-400 mt-0.5">📍 Rak {loan.books.rak}</p>
-                              )}
-                            </td>
-
-                            {/* Tenggat */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`text-xs font-black ${loan._isLate ? 'text-rose-600' : 'text-slate-600'}`}>
-                                {loan._isLate && '⚠️ '}
-                                {new Date(loan.due_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                              </span>
-                              {loan._isLate && (
-                                <p className="text-[9px] font-black text-rose-400 mt-0.5">
-                                  {Math.floor((Date.now() - new Date(loan.due_date).getTime()) / 86400000)}h terlambat
-                                </p>
-                              )}
-                            </td>
-
-                            {/* NIP */}
-                            <td className="px-6 py-4 text-slate-500 text-xs font-mono">
-                              {loan.employee_nip || '—'}
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 rounded text-[9px] font-black uppercase border tracking-widest ${loanBadge(loan._isLate ? 'TERLAMBAT' : loan.status)}`}>
-                                {loan._isLate ? 'Terlambat' : loan.status}
-                              </span>
-                            </td>
-
-                            {/* Aksi */}
-                            <td className="px-6 py-4 text-right">
-                              <ReturnButton loan={loan} />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Footer count */}
-                    {enrichedLoans.length > 0 && (
-                      <div className="px-6 py-3 border-t border-slate-50 bg-slate-50/50 flex items-center justify-between">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          Menampilkan {enrichedLoans.length} dari {loans?.length || 0} data
-                        </p>
-                        {overdueLoans.length > 0 && (
-                          <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full">
-                            ⚠️ {overdueLoans.length} peminjaman terlambat
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <SirkulasiTable
+                  loans={enrichedLoans}
+                  totalAll={loans?.length || 0}
+                  overdueCount={overdueLoans.length}
+                />
               </div>
             )}
 
@@ -743,93 +623,10 @@ export default async function DashboardPage(props: any) {
                 TAB: PEGAWAI
             ════════════════════════ */}
             {activeTab === 'pegawai' && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                  <div>
-                    <h2 className="text-base font-black text-slate-800">👥 Manajemen Akses Pegawai</h2>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                      {profiles?.length || 0} akun terdaftar
-                      {pendingUsers > 0 && <span className="text-rose-500 font-black"> · {pendingUsers} menunggu ACC</span>}
-                    </p>
-                  </div>
-                </div>
-                
-
-                {/* Mobile cards */}
-                <div className="md:hidden divide-y divide-slate-50">
-                  {profiles?.map(profile => (
-                    <div key={profile.id} className={`p-5 space-y-3 ${profile.status === 'pending' ? 'bg-amber-50/30' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-[#1B4332] text-white rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0">
-                          {profile.email?.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-800 text-sm truncate">{profile.email}</p>
-                          <p className="text-[9px] text-slate-400 font-medium mt-0.5">
-                            Daftar: {new Date(profile.created_at).toLocaleDateString('id-ID')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-                        <div className="flex gap-2">
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border tracking-widest ${
-                            profile.role === 'admin' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-100 text-slate-600 border-slate-200'
-                          }`}>{profile.role || 'user'}</span>
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border tracking-widest ${
-                            profile.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          }`}>{profile.status}</span>
-                        </div>
-                        <UserAction user={profile} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        {['Pegawai', 'Role', 'Status', 'Tgl Daftar', 'Aksi'].map(h => (
-                          <th key={h} className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {profiles?.map(profile => (
-                        <tr key={profile.id} className={`hover:bg-slate-50/80 transition-colors ${profile.status === 'pending' ? 'bg-amber-50/20' : ''}`}>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-[#1B4332] text-white rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0">
-                                {profile.email?.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-bold text-slate-800">{profile.email}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded border tracking-widest ${
-                              profile.role === 'admin' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>{profile.role || 'user'}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded border tracking-widest ${
-                              profile.status === 'pending'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>{profile.status === 'pending' ? '⏳ Pending' : '✅ Aktif'}</span>
-                          </td>
-                          <td className="px-6 py-4 text-slate-500 text-xs font-medium">
-                            {new Date(profile.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <UserAction user={profile} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <PegawaiTable
+                profiles={profiles || []}
+                pendingUsers={pendingUsers}
+              />
             )}
 {/* ════════════════════════
                 TAB: BUKU TAMU

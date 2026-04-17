@@ -24,6 +24,7 @@ export default function EditBookModal({ book }: { book: any }) {
   const [stock,      setStock]      = useState(book.stock     || 0);
   const [rak,        setRak]        = useState(book.rak       || '');
   const [pdfUrl,     setPdfUrl]     = useState(book.pdf_url   || '');
+  const [ringkasan,  setRingkasan]  = useState(book.ringkasan || '');
   const [loading,    setLoading]    = useState(false);
   const router = useRouter();
 
@@ -32,7 +33,7 @@ export default function EditBookModal({ book }: { book: any }) {
     setLoading(true);
     const { error } = await supabase
       .from('books')
-      .update({ title, author, publisher, category, nomor_buku: nomorBuku, stock, rak, pdf_url: pdfUrl })
+      .update({ title, author, publisher, category, nomor_buku: nomorBuku, stock, rak, pdf_url: pdfUrl, ringkasan })
       .eq('id', book.id);
     setLoading(false);
     if (!error) { setIsOpen(false); router.refresh(); }
@@ -71,13 +72,11 @@ export default function EditBookModal({ book }: { book: any }) {
                   className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
               </div>
 
-              {/* Nomor Buku + Kategori */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor Buku</label>
                   <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
-                    placeholder="Contoh: 001" />
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="001" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
@@ -108,23 +107,33 @@ export default function EditBookModal({ book }: { book: any }) {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lokasi Rak</label>
                   <input type="text" value={rak} onChange={(e) => setRak(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
-                    placeholder="Contoh: A-1" />
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="A-1" />
                 </div>
+              </div>
+
+              {/* Ringkasan ← baru */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Ringkasan / Sinopsis <span className="font-normal normal-case text-slate-400">(opsional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={ringkasan}
+                  onChange={(e) => setRingkasan(e.target.value)}
+                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800 resize-none text-sm placeholder:text-slate-300"
+                  placeholder="Tuliskan ringkasan isi buku..."
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Link E-Book (PDF)</label>
                 <input type="url" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)}
-                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800"
-                  placeholder="https://..." />
+                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="https://..." />
               </div>
 
               <div className="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsOpen(false)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">
-                  Batal
-                </button>
+                  className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Batal</button>
                 <button type="submit" disabled={loading}
                   className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all disabled:opacity-60 flex items-center gap-2">
                   {loading ? <><Spinner /> Menyimpan...</> : 'Simpan Perubahan'}

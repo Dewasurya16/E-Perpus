@@ -23,20 +23,24 @@ export default function AddBookModal() {
   const [stock,      setStock]      = useState(1);
   const [rak,        setRak]        = useState('');
   const [pdfUrl,     setPdfUrl]     = useState('');
+  const [ringkasan,  setRingkasan]  = useState('');
   const [loading,    setLoading]    = useState(false);
   const router = useRouter();
 
   const resetForm = () => {
     setTitle(''); setAuthor(''); setPublisher('');
-    setCategory(''); setNomorBuku(''); setStock(1); setRak(''); setPdfUrl('');
+    setCategory(''); setNomorBuku(''); setStock(1);
+    setRak(''); setPdfUrl(''); setRingkasan('');
   };
 
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('books').insert([
-      { title, author, publisher, category, nomor_buku: nomorBuku, stock, rak, pdf_url: pdfUrl }
-    ]);
+    const { error } = await supabase.from('books').insert([{
+      title, author, publisher, category,
+      nomor_buku: nomorBuku, stock, rak,
+      pdf_url: pdfUrl, ringkasan,
+    }]);
     setLoading(false);
     if (!error) { setIsOpen(false); resetForm(); router.refresh(); }
     else alert('Gagal menambah buku! Error: ' + error.message);
@@ -77,13 +81,12 @@ export default function AddBookModal() {
                   placeholder="Contoh: KUHP Edisi Revisi" />
               </div>
 
-              {/* Nomor Buku + Kategori */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor Buku</label>
                   <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="Contoh: 001" />
+                    placeholder="001" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
@@ -97,14 +100,12 @@ export default function AddBookModal() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Penulis</label>
                   <input required type="text" value={author} onChange={(e) => setAuthor(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="Nama Penulis" />
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Penerbit</label>
                   <input type="text" value={publisher} onChange={(e) => setPublisher(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="Nama Penerbit" />
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800" />
                 </div>
               </div>
 
@@ -118,8 +119,25 @@ export default function AddBookModal() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lokasi Rak</label>
                   <input type="text" value={rak} onChange={(e) => setRak(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="Contoh: A-1" />
+                    placeholder="A-1" />
                 </div>
+              </div>
+
+              {/* Ringkasan ← baru */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Ringkasan / Sinopsis <span className="font-normal normal-case text-slate-400">(opsional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={ringkasan}
+                  onChange={(e) => setRingkasan(e.target.value)}
+                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800 resize-none placeholder:text-slate-300 text-sm"
+                  placeholder="Tuliskan ringkasan isi buku agar mudah dicari dan dikenali oleh peminjam..."
+                />
+                <p className="text-[10px] text-slate-400 font-medium mt-1">
+                  Ringkasan akan tampil di kartu buku publik dan dapat dicari.
+                </p>
               </div>
 
               <div>
@@ -131,9 +149,7 @@ export default function AddBookModal() {
 
               <div className="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsOpen(false)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">
-                  Batal
-                </button>
+                  className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Batal</button>
                 <button type="submit" disabled={loading}
                   className="px-6 py-2.5 bg-[#1B4332] hover:bg-[#143628] text-white rounded-xl font-bold shadow-lg shadow-[#1B4332]/20 transition-all disabled:opacity-60 flex items-center gap-2">
                   {loading ? <><Spinner /> Menyimpan...</> : 'Simpan Buku'}
