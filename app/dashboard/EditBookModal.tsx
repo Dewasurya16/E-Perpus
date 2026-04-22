@@ -73,13 +73,15 @@ export default function EditBookModal({ book }: { book: any }) {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                {/* UBAH LABEL NOMOR BUKU -> ISBN */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor Buku</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ISBN</label>
                   <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="001" />
+                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="978-..." />
                 </div>
+                {/* UBAH LABEL KATEGORI -> KLASIFIKASI */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Klasifikasi</label>
                   <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-800" />
                 </div>
@@ -111,7 +113,6 @@ export default function EditBookModal({ book }: { book: any }) {
                 </div>
               </div>
 
-              {/* Ringkasan ← baru */}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Ringkasan / Sinopsis <span className="font-normal normal-case text-slate-400">(opsional)</span>

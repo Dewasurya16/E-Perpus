@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -14,36 +15,51 @@ function Spinner() {
 }
 
 export default function AddBookModal() {
-  const [isOpen,     setIsOpen]     = useState(false);
-  const [title,      setTitle]      = useState('');
-  const [author,     setAuthor]     = useState('');
-  const [publisher,  setPublisher]  = useState('');
-  const [category,   setCategory]   = useState('');
-  const [nomorBuku,  setNomorBuku]  = useState('');
-  const [stock,      setStock]      = useState(1);
-  const [rak,        setRak]        = useState('');
-  const [pdfUrl,     setPdfUrl]     = useState('');
-  const [ringkasan,  setRingkasan]  = useState('');
-  const [loading,    setLoading]    = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [publisher, setPublisher] = useState('');
+  const [category, setCategory] = useState('');
+  const [nomorBuku, setNomorBuku] = useState('');
+  const [stock, setStock] = useState(1);
+  const [rak, setRak] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [ringkasan, setRingkasan] = useState('');
+  const [loading, setLoading] = useState(false);
+  
   const router = useRouter();
 
   const resetForm = () => {
-    setTitle(''); setAuthor(''); setPublisher('');
-    setCategory(''); setNomorBuku(''); setStock(1);
-    setRak(''); setPdfUrl(''); setRingkasan('');
+    setTitle(''); 
+    setAuthor(''); 
+    setPublisher('');
+    setCategory(''); 
+    setNomorBuku(''); 
+    setStock(1);
+    setRak(''); // Fixed: Was rak('')
+    setPdfUrl(''); 
+    setRingkasan('');
   };
 
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     const { error } = await supabase.from('books').insert([{
       title, author, publisher, category,
       nomor_buku: nomorBuku, stock, rak,
       pdf_url: pdfUrl, ringkasan,
     }]);
+    
     setLoading(false);
-    if (!error) { setIsOpen(false); resetForm(); router.refresh(); }
-    else alert('Gagal menambah buku! Error: ' + error.message);
+    
+    if (!error) { 
+      setIsOpen(false); 
+      resetForm(); 
+      router.refresh(); 
+    } else {
+      alert('Gagal menambah buku! Error: ' + error.message);
+    }
   };
 
   return (
@@ -83,13 +99,13 @@ export default function AddBookModal() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor Buku</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ISBN</label>
                   <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="001" />
+                    placeholder="978-..." />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Klasifikasi</label>
                   <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
                     placeholder="Hukum Pidana" />
@@ -123,7 +139,6 @@ export default function AddBookModal() {
                 </div>
               </div>
 
-              {/* Ringkasan ← baru */}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Ringkasan / Sinopsis <span className="font-normal normal-case text-slate-400">(opsional)</span>

@@ -74,12 +74,12 @@ function MobileActions({ book }: { book: Book }) {
 }
 
 export default function AdminBooksTable({ books }: { books: Book[] }) {
-  const [search,       setSearch]       = useState('');
-  const [catFilter,    setCatFilter]    = useState('');
-  const [bbFilter,     setBbFilter]     = useState('');
-  const [page,         setPage]         = useState(1);
-  const [sortKey,      setSortKey]      = useState<'title' | 'stock' | 'created_at'>('created_at');
-  const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
+  const [search,        setSearch]       = useState('');
+  const [catFilter,     setCatFilter]    = useState('');
+  const [bbFilter,      setBbFilter]     = useState('');
+  const [page,          setPage]         = useState(1);
+  const [sortKey,       setSortKey]      = useState<'title' | 'stock' | 'created_at'>('created_at');
+  const [sortDir,       setSortDir]      = useState<'asc' | 'desc'>('desc');
   const [isTransition, setIsTransition] = useState(false);
   const firstRender = useRef(true);
 
@@ -163,7 +163,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-            placeholder="Cari judul, penulis, kategori, nomor, ringkasan..."
+            placeholder="Cari judul, penulis, klasifikasi, ISBN, ringkasan..."
             className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-[#1B4332] transition-all placeholder:text-slate-400"
           />
           {search && (
@@ -181,7 +181,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
             onChange={(e) => { setCatFilter(e.target.value); resetPage(); }}
             className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-[#1B4332] cursor-pointer"
           >
-            <option value="">Semua Kategori</option>
+            <option value="">Semua Klasifikasi</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
 
@@ -233,14 +233,13 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                     </button>
                   </th>
                   <th className="text-left px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Penulis / Penerbit</th>
-                  <th className="text-left px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Kategori</th>
+                  <th className="text-left px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Klasifikasi</th>
                   <th className="text-left px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Rak</th>
                   <th className="text-left px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     <button onClick={() => toggleSort('stock')} className="flex items-center hover:text-slate-700 transition-colors">
                       Stok <SortIcon col="stock" />
                     </button>
                   </th>
-                  {/* Aksi — selalu tampil, termasuk mobile */}
                   <th className="text-right px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
                 </tr>
               </thead>
@@ -258,7 +257,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                       <td className="px-4 py-3.5 max-w-[200px] align-top">
                         <p className="font-bold text-slate-800 text-xs leading-snug line-clamp-2">{book.title}</p>
                         {book.nomor_buku && (
-                          <p className="text-[9px] text-slate-400 font-bold mt-0.5">#{book.nomor_buku}</p>
+                          <p className="text-[9px] text-slate-400 font-bold mt-0.5">ISBN: {book.nomor_buku}</p>
                         )}
                         {book.category && (
                           <span className="lg:hidden inline-block mt-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded text-[8px] font-black uppercase tracking-wide">
@@ -270,7 +269,6 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                             {book.ringkasan.substring(0, 60)}…
                           </p>
                         )}
-                        {/* ── Mobile actions (selalu terlihat di hp) ── */}
                         <MobileActions book={book} />
                       </td>
 
@@ -282,7 +280,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                         )}
                       </td>
 
-                      {/* Kategori */}
+                      {/* Klasifikasi */}
                       <td className="px-4 py-3.5 hidden lg:table-cell align-top">
                         {book.category ? (
                           <span className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-[9px] font-black uppercase tracking-wide whitespace-nowrap">
@@ -326,7 +324,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                         </span>
                       </td>
 
-                      {/* Aksi — hidden di mobile (pakai MobileActions di atas) */}
+                      {/* Aksi */}
                       <td className="px-4 py-3.5 align-top">
                         <div className="hidden sm:flex items-center justify-end gap-1.5 flex-wrap">
                           <QRCodeModal book={book} />

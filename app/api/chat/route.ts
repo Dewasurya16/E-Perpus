@@ -46,16 +46,17 @@ export async function POST(req: Request) {
     // ── 1. TARIK DATA BUKU ──────────────────────────────────────────────
     const { data: books, error: booksError } = await supabase
       .from('books')
-      .select('id, title, author, category, stock, rak');
+      .select('id, title, author, category, stock, rak, nomor_buku');
 
     if (booksError) console.error('Error fetching books:', booksError);
 
+    // MENGGANTI 'Kategori' MENJADI 'Klasifikasi' DAN MENAMBAHKAN 'ISBN'
     const catalogContext =
       books && books.length > 0
         ? books
             .map(
               (b) =>
-                `- ID: ${b.id} | Judul: "${b.title}" | Penulis: ${b.author || 'Anonim'} | Kategori: ${b.category || 'Umum'} | Rak: ${b.rak || 'TBA'} | Sisa Stok: ${b.stock}`
+                `- ID: ${b.id} | Judul: "${b.title}" | Penulis: ${b.author || 'Anonim'} | ISBN: ${b.nomor_buku || 'Tidak Ada'} | Klasifikasi: ${b.category || 'Umum'} | Rak: ${b.rak || 'TBA'} | Sisa Stok: ${b.stock}`
             )
             .join('\n')
         : 'Saat ini belum ada buku di database.';
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
         : 'Data staf belum berhasil dimuat dari sistem.';
 
     // ── 3. SYSTEM PROMPT ────────────────────────────────────────────────
+    // MENGGANTI PANDUAN PENCARIAN BUKU UNTUK MENGGUNAKAN 'Klasifikasi' DAN 'ISBN'
     const systemPrompt = `
 Anda adalah "Lexi", Asisten AI E-Perpustakaan Kejaksaan Negeri Soppeng.
 Karakter Anda: Sangat ramah, empatik, cerdas, dan luwes. Anda berbicara dengan bahasa Indonesia yang rapi, tidak kaku, layaknya pustakawan profesional yang siap membantu rekan-rekan kejaksaan dengan senyuman.
@@ -89,7 +91,8 @@ PANDUAN MENJAWAB (SANGAT PENTING):
    - Jika pengguna mencari buku, baca DATA BUKU dengan sangat teliti. Sebutkan maksimal 3-5 buku yang paling relevan.
    - Berikan rinciannya dengan format yang elegan ke bawah:
      Judul: **[Judul Buku]** karya [Penulis]
-     Kategori: [Kategori]
+     ISBN: [ISBN]
+     Klasifikasi: [Klasifikasi]
      Lokasi Rak: [Rak]
      Sisa Stok: [Stok] eksemplar
    - Tutup informasi buku dengan tawaran (Contoh: "Apakah Bapak/Ibu tertarik meminjamnya? Boleh sebutkan nama Bapak/Ibu agar saya bantu booking langsung dari sini!").

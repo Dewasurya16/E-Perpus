@@ -27,7 +27,9 @@ export default function CategoryFilter({ categories }: { categories: string[] })
 
   return (
     <div className="mt-8 pt-8 border-t border-white/10 flex items-center gap-3 overflow-x-auto hide-scrollbar pb-2">
-      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Filter:</span>
+      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+        Klasifikasi:
+      </span>
       
       <button 
         onClick={() => handleFilter('')} 
