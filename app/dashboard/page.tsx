@@ -1,19 +1,15 @@
 import { supabase } from '../../lib/supabase';
 import ReturnButton from './ReturnButton';
-import AddBookModal from './AddBookModal';
 import UserAction from './UserAction';
-import DeleteBookButton from './DeleteBookButton';
-import EditBookModal from './EditBookModal';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ProfileMenu from '../ProfileMenu';
 import Link from 'next/link';
 import AIAssistant from '../AIAssistant';
 import ExportLaporan from './ExportLaporan';
-import BacaPDFModal from './BacaPDFModal';
 import ScanBukuModal from './ScanBukuModal';
-import QRCodeModal from './QRCodeModal';
-import Bukutamuadmintable from '../buku-tamu/components/Bukutamuadmintable'; 
+import Bukutamuadmintable from '../buku-tamu/components/Bukutamuadmintable';
+import KatalogBukuAdmin from './KatalogBukuAdmin'; 
 import SirkulasiTable from './Sirkulasitable';
 import PegawaiTable from './PegawaiTable';
 import Image from 'next/image';
@@ -462,101 +458,7 @@ export default async function DashboardPage(props: any) {
                 TAB: KATALOG BUKU
             ════════════════════════ */}
             {activeTab === 'buku' && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
-                  <div>
-                    <h2 className="text-base font-black text-slate-800 flex items-center gap-2">📚 Database Katalog Buku</h2>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                      {totalBooks} judul terdaftar · Kelola stok, rak, dan cetak QR Code
-                    </p>
-                  </div>
-                  <AddBookModal />
-                </div>
-
-                {/* Mobile cards */}
-                <div className="md:hidden divide-y divide-slate-50">
-                  {books?.length === 0 ? (
-                    <div className="p-12 text-center text-slate-400 text-sm font-bold">Belum ada buku.</div>
-                  ) : books?.map(book => (
-                    <div key={book.id} className="p-5 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-slate-800 leading-snug">{book.title}</p>
-                          <div className="flex gap-2 mt-1.5 flex-wrap">
-                            <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">{book.category}</span>
-                            <span className="text-[8px] font-bold bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-100">📍 {book.rak || 'TBA'}</span>
-                          </div>
-                        </div>
-                        <div className={`text-xl font-black flex-shrink-0 ${book.stock > 0 ? 'text-[#1B4332]' : 'text-rose-500'}`}>
-                          {book.stock}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 border-t border-slate-50 pt-3">
-                        <BacaPDFModal url={book.pdf_url} compact />
-                        <QRCodeModal book={book} />
-                        <EditBookModal book={book} />
-                        <DeleteBookButton bookId={book.id} bookTitle={book.title} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        {['Judul & Kategori', 'Penulis / Penerbit', 'Rak · Rating', 'Stok', 'Aksi'].map(h => (
-                          <th key={h} className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {books?.length === 0 ? (
-                        <tr><td colSpan={5} className="text-center py-16 text-slate-400 text-sm">Belum ada buku. Klik Tambah Buku Baru.</td></tr>
-                      ) : books?.map(book => (
-                        <tr key={book.id} className="hover:bg-slate-50/80 transition-colors group">
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-slate-800 max-w-[200px] truncate">{book.title}</p>
-                            <span className="inline-block mt-1 text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">
-                              {book.category}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-slate-700 text-xs font-bold truncate max-w-[140px]">{book.author || '—'}</p>
-                            <p className="text-slate-400 text-[10px] truncate max-w-[140px]">{book.publisher || '—'}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-[10px] font-black text-violet-700 bg-violet-50 inline-block px-2 py-0.5 rounded border border-violet-100 mb-1">
-                              📍 {book.rak || 'TBA'}
-                            </p>
-                            <div className="flex items-center gap-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <svg key={i} width="9" height="9" viewBox="0 0 24 24" fill={i < Math.round(book.rating || 0) ? '#F59E0B' : '#E2E8F0'}>
-                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                              ))}
-                              <span className="text-[8px] text-slate-400 font-bold ml-1">({book.rating_count || 0})</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-lg font-black ${book.stock > 0 ? 'text-[#1B4332]' : 'text-rose-500'}`}>{book.stock}</span>
-                            <span className="text-[9px] font-bold text-slate-400 ml-1">pcs</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                              <BacaPDFModal url={book.pdf_url} compact />
-                              <QRCodeModal book={book} />
-                              <EditBookModal book={book} />
-                              <DeleteBookButton bookId={book.id} bookTitle={book.title} />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <KatalogBukuAdmin books={books || []} totalBooks={totalBooks} />
             )}
 
             {/* ════════════════════════

@@ -1,179 +1,274 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 
+/* ── Spinner ───────────────────────────────────────────────────────────── */
 function Spinner() {
   return (
     <span style={{
-      display: 'inline-block', width: 16, height: 16, flexShrink: 0,
+      display: 'inline-block', width: 14, height: 14, flexShrink: 0,
       border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff',
-      borderRadius: '50%', animation: 'spin .65s linear infinite'
+      borderRadius: '50%', animation: 'spin .65s linear infinite',
     }} />
   );
 }
 
+/* ── Field wrapper ─────────────────────────────────────────────────────── */
+function Field({ label, hint, children }: {
+  label: string; hint?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+        {hint && <span className="text-[9px] text-slate-300 italic">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const inputCls =
+  'w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl ' +
+  'focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:bg-white ' +
+  'outline-none transition-all text-sm font-medium text-slate-800 placeholder:text-slate-300';
+
+/* ════════════════════════════════════════════════════════════════════════ */
 export default function AddBookModal() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
+  const [isOpen,    setIsOpen]    = useState(false);
+  const [mounted,   setMounted]   = useState(false);
+  const [title,     setTitle]     = useState('');
+  const [author,    setAuthor]    = useState('');
   const [publisher, setPublisher] = useState('');
-  const [category, setCategory] = useState('');
+  const [category,  setCategory]  = useState('');
   const [nomorBuku, setNomorBuku] = useState('');
-  const [stock, setStock] = useState(1);
-  const [rak, setRak] = useState('');
-  const [pdfUrl, setPdfUrl] = useState('');
+  const [stock,     setStock]     = useState(1);
+  const [rak,       setRak]       = useState('');
+  const [pdfUrl,    setPdfUrl]    = useState('');
   const [ringkasan, setRingkasan] = useState('');
-  const [loading, setLoading] = useState(false);
-  
+  const [loading,   setLoading]   = useState(false);
   const router = useRouter();
 
+  useEffect(() => { setMounted(true); }, []);
+
+  /* Kunci scroll body */
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  /* Tutup dengan Escape */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const resetForm = () => {
-    setTitle(''); 
-    setAuthor(''); 
-    setPublisher('');
-    setCategory(''); 
-    setNomorBuku(''); 
-    setStock(1);
-    setRak(''); // Fixed: Was rak('')
-    setPdfUrl(''); 
-    setRingkasan('');
+    setTitle(''); setAuthor(''); setPublisher('');
+    setCategory(''); setNomorBuku(''); setStock(1);
+    setRak(''); setPdfUrl(''); setRingkasan('');
   };
 
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
     const { error } = await supabase.from('books').insert([{
       title, author, publisher, category,
       nomor_buku: nomorBuku, stock, rak,
       pdf_url: pdfUrl, ringkasan,
     }]);
-    
     setLoading(false);
-    
-    if (!error) { 
-      setIsOpen(false); 
-      resetForm(); 
-      router.refresh(); 
-    } else {
-      alert('Gagal menambah buku! Error: ' + error.message);
-    }
+    if (!error) { setIsOpen(false); resetForm(); router.refresh(); }
+    else alert('Gagal menambah buku! Error: ' + error.message);
   };
+
+  /* ── Trigger ─────────────────────────────────────────────────────── */
+  const trigger = (
+    <button
+      onClick={() => setIsOpen(true)}
+      className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                 bg-white/15 hover:bg-white/25 border border-white/30 hover:border-white/50
+                 text-white px-5 py-2.5 rounded-xl font-bold text-sm
+                 transition-all shadow-md backdrop-blur-sm"
+    >
+      <span className="text-base">＋</span> Tambah Buku Baru
+    </button>
+  );
+
+  /* ── Modal via Portal ────────────────────────────────────────────── */
+  const modal = isOpen && mounted && createPortal(
+    <>
+      <style>{`
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(.97); }
+                             to   { opacity: 1; transform: translateY(0) scale(1); } }
+      `}</style>
+
+      {/* Backdrop */}
+      <div
+        onClick={() => setIsOpen(false)}
+        style={{ animation: 'fadeIn .18s ease' }}
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998]"
+      />
+
+      {/* Scroll container */}
+      <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center
+                      p-4 overflow-y-auto">
+        <div
+          style={{ animation: 'slideUp .22s cubic-bezier(.34,1.56,.64,1)' }}
+          className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl my-4 sm:my-8 overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 z-20 bg-white/80 backdrop-blur-sm rounded-3xl
+                            flex flex-col items-center justify-center gap-3">
+              <div style={{
+                width: 48, height: 48,
+                border: '4px solid #e2e8f0', borderTopColor: '#1B4332',
+                borderRadius: '50%', animation: 'spin .7s linear infinite',
+              }} />
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                Menyimpan buku…
+              </p>
+            </div>
+          )}
+
+          {/* ── Header ──────────────────────────────────────────────── */}
+          <div className="flex items-center justify-between px-6 py-4"
+               style={{ background: 'linear-gradient(135deg,#1B4332,#2D6A4F)' }}>
+            <div>
+              <p className="text-emerald-300 text-[9px] font-black uppercase tracking-widest mb-0.5">
+                Manajemen Buku
+              </p>
+              <h3 className="text-white font-black text-lg leading-none">Tambah Buku Baru</h3>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10
+                         hover:bg-white/20 text-white/70 hover:text-white font-bold
+                         transition-all text-lg"
+            >✕</button>
+          </div>
+
+          {/* ── Form ────────────────────────────────────────────────── */}
+          <form onSubmit={handleAddBook} className="p-6 space-y-5">
+
+            {/* Judul */}
+            <Field label="Judul Buku">
+              <input required type="text" value={title}
+                onChange={e => setTitle(e.target.value)}
+                className={inputCls}
+                placeholder="Contoh: KUHP Edisi Revisi…" />
+            </Field>
+
+            {/* ISBN + Klasifikasi */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="ISBN" hint="opsional">
+                <input type="text" value={nomorBuku}
+                  onChange={e => setNomorBuku(e.target.value)}
+                  className={inputCls}
+                  placeholder="978-xxx-xxx-xxx-x" />
+              </Field>
+              <Field label="Klasifikasi">
+                <input required type="text" value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className={inputCls}
+                  placeholder="Mis. Hukum Pidana, 300…" />
+              </Field>
+            </div>
+
+            {/* Penulis + Penerbit */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Penulis">
+                <input required type="text" value={author}
+                  onChange={e => setAuthor(e.target.value)}
+                  className={inputCls}
+                  placeholder="Nama penulis…" />
+              </Field>
+              <Field label="Penerbit" hint="opsional">
+                <input type="text" value={publisher}
+                  onChange={e => setPublisher(e.target.value)}
+                  className={inputCls}
+                  placeholder="Nama penerbit…" />
+              </Field>
+            </div>
+
+            {/* Stok + Rak */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Jumlah Stok">
+                <input required type="number" min="0" value={stock}
+                  onChange={e => setStock(Number(e.target.value))}
+                  className={inputCls} />
+              </Field>
+              <Field label="Lokasi Rak" hint="opsional">
+                <input type="text" value={rak}
+                  onChange={e => setRak(e.target.value)}
+                  className={inputCls}
+                  placeholder="Mis. A-1, B-3…" />
+              </Field>
+            </div>
+
+            {/* Ringkasan */}
+            <Field label="Ringkasan / Sinopsis" hint="opsional">
+              <textarea
+                rows={3}
+                value={ringkasan}
+                onChange={e => setRingkasan(e.target.value)}
+                className={`${inputCls} resize-none`}
+                placeholder="Tuliskan ringkasan isi buku agar mudah dicari peminjam…"
+              />
+              <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
+                Ringkasan tampil di kartu buku publik dan dapat dicari.
+              </p>
+            </Field>
+
+            {/* Link E-Book */}
+            <Field label="Link E-Book (PDF)" hint="opsional">
+              <input type="url" value={pdfUrl}
+                onChange={e => setPdfUrl(e.target.value)}
+                className={inputCls}
+                placeholder="https://…" />
+            </Field>
+
+            {/* ── Actions ─────────────────────────────────────────── */}
+            <div className="pt-2 border-t border-slate-100 flex flex-col-reverse sm:flex-row
+                            items-stretch sm:items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setIsOpen(false); resetForm(); }}
+                className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500
+                           hover:bg-slate-100 border border-slate-200 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#1B4332] to-emerald-600
+                           hover:from-[#143326] hover:to-emerald-700 text-white rounded-xl
+                           font-bold text-sm shadow-lg shadow-emerald-900/20 transition-all
+                           disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {loading ? <><Spinner /> Menyimpan…</> : '📖 Simpan Buku'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
 
   return (
     <>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full sm:w-auto bg-[#1B4332] hover:bg-[#143628] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-2"
-      >
-        <span>➕</span> Tambah Buku Baru
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-left my-8 relative">
-
-            {loading && (
-              <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center gap-3">
-                <div style={{ width: 48, height: 48, border: '4px solid #e2e8f0', borderTopColor: '#1B4332', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-                <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Menyimpan...</p>
-              </div>
-            )}
-
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xl font-black text-slate-800">Tambah Buku Baru</h3>
-              <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-500 font-bold transition-colors">✕</button>
-            </div>
-
-            <form onSubmit={handleAddBook} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Judul Buku</label>
-                <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                  placeholder="Contoh: KUHP Edisi Revisi" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ISBN</label>
-                  <input type="text" value={nomorBuku} onChange={(e) => setNomorBuku(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="978-..." />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Klasifikasi</label>
-                  <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="Hukum Pidana" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Penulis</label>
-                  <input required type="text" value={author} onChange={(e) => setAuthor(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Penerbit</label>
-                  <input type="text" value={publisher} onChange={(e) => setPublisher(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sisa Stok</label>
-                  <input required type="number" min="0" value={stock} onChange={(e) => setStock(Number(e.target.value))}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Lokasi Rak</label>
-                  <input type="text" value={rak} onChange={(e) => setRak(e.target.value)}
-                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                    placeholder="A-1" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Ringkasan / Sinopsis <span className="font-normal normal-case text-slate-400">(opsional)</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={ringkasan}
-                  onChange={(e) => setRingkasan(e.target.value)}
-                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800 resize-none placeholder:text-slate-300 text-sm"
-                  placeholder="Tuliskan ringkasan isi buku agar mudah dicari dan dikenali oleh peminjam..."
-                />
-                <p className="text-[10px] text-slate-400 font-medium mt-1">
-                  Ringkasan akan tampil di kartu buku publik dan dapat dicari.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Link E-Book (PDF)</label>
-                <input type="url" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)}
-                  className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-[#1B4332] focus:border-[#1B4332] outline-none transition-all font-medium text-slate-800"
-                  placeholder="https://..." />
-              </div>
-
-              <div className="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsOpen(false)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Batal</button>
-                <button type="submit" disabled={loading}
-                  className="px-6 py-2.5 bg-[#1B4332] hover:bg-[#143628] text-white rounded-xl font-bold shadow-lg shadow-[#1B4332]/20 transition-all disabled:opacity-60 flex items-center gap-2">
-                  {loading ? <><Spinner /> Menyimpan...</> : 'Simpan Buku'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {trigger}
+      {modal}
     </>
   );
 }
