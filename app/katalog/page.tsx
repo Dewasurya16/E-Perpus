@@ -13,7 +13,9 @@ import BacaPDFModal from '../dashboard/BacaPDFModal';
 import ScanBukuModal from '../dashboard/ScanBukuModal';
 import QRCodeModal from '../dashboard/QRCodeModal';
 import Image from 'next/image';
-import PaginationControls from './components/PaginationControls'; // <-- Import komponen Paginasi baru
+import PaginationControls from './components/PaginationControls';
+import DueDateBanner from './DueDateBanner';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -200,7 +202,10 @@ export default async function KatalogPage(props: any) {
           )}
         </div>
 
-        {/* ── INFO BAR ── */}
+        {/* ── NOTIFIKASI TENGGAT WAKTU ── */}
+        <div className="mt-5">
+          <DueDateBanner userEmail={userEmail} />
+        </div>
         <div className="mt-7 mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="w-1 h-4 rounded-full bg-[#1B4332]" />
@@ -297,9 +302,11 @@ export default async function KatalogPage(props: any) {
                         <span className="text-[7.5px] text-slate-400 font-bold ml-1">({book.rating_count || 0})</span>
                       </div>
 
-                      <h3 className="text-[12.5px] font-black text-slate-800 line-clamp-2 leading-snug mb-1 group-hover:text-[#1B4332] transition-colors duration-200">
-                        {book.title}
-                      </h3>
+                      <Link href={`/buku/${book.id}`}>
+                        <h3 className="text-[12.5px] font-black text-slate-800 line-clamp-2 leading-snug mb-1 group-hover:text-[#1B4332] transition-colors duration-200 hover:underline underline-offset-2 decoration-[#1B4332]">
+                          {book.title}
+                        </h3>
+                      </Link>
                      <p className="text-[9.5px] text-slate-400 font-semibold mb-1 truncate">
                         {book.author || 'Tim Kejaksaan'}
                       </p>
@@ -318,9 +325,15 @@ export default async function KatalogPage(props: any) {
 
                       <div className="my-3.5 border-t border-slate-100" />
                       <div className="mt-auto space-y-2">
+                        <Link
+                          href={`/buku/${book.id}`}
+                          className="flex items-center justify-center gap-1.5 w-full py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#1B4332] hover:text-white hover:border-[#1B4332] transition-all"
+                        >
+                          🔍 Lihat Detail
+                        </Link>
                         <div className="grid grid-cols-2 gap-2">
                           <BacaPDFModal url={book.pdf_url} />
-                          <QRCodeModal book={book} isLoggedIn={true} />
+                          <QRCodeModal book={book} isLoggedIn={true} userEmail={userEmail} />
                         </div>
                         <BorrowModal book={book} userEmail={userEmail} />
                       </div>
@@ -348,16 +361,24 @@ export default async function KatalogPage(props: any) {
 
         {/* ── HISTORY SECTION ── */}
         <div className="mt-24 pt-12 border-t-2 border-dashed border-slate-200/70">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-9 h-9 bg-[#1B4332] text-white rounded-xl flex items-center justify-center text-base shadow-md flex-shrink-0">
-              📋
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#1B4332] text-white rounded-xl flex items-center justify-center text-base shadow-md flex-shrink-0">
+                📋
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-800">Riwayat Pinjaman Saya</h2>
+                <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
+                  Kelola peminjaman aktif &amp; beri ulasan
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800">Riwayat Pinjaman Saya</h2>
-              <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
-                Kelola peminjaman aktif &amp; beri ulasan
-              </p>
-            </div>
+            <Link 
+              href="/profil" 
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border border-emerald-200 shadow-sm"
+            >
+              <span>👤</span> Lihat Semua di Profil
+            </Link>
           </div>
           <MyHistory userEmail={userEmail} />
         </div>

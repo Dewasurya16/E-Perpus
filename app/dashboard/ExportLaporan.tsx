@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import GlobalActionLoading from '../components/GlobalActionLoading';
 
 // ── Modal TTD Pegawai ─────────────────────────────────────────
 function PegawaiSignaturePad({
@@ -244,29 +245,29 @@ export default function ExportLaporan({
         
         // Gambar Logo (Jika ada)
         if (logoData) {
-          doc.addImage(logoData, 'PNG', margin + 2, margin, 24, 24);
+          doc.addImage(logoData, 'PNG', margin + 3, margin, 26, 26);
         }
 
         // Teks Kop
         doc.setFont('times', 'bold');
-        doc.setFontSize(13);
-        doc.text('KEJAKSAAN REPUBLIK INDONESIA', pageW / 2, margin + 4, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text('KEJAKSAAN TINGGI SULAWESI SELATAN', pageW / 2, margin + 10, { align: 'center' });
         doc.setFontSize(14);
-        doc.text('KEJAKSAAN NEGERI SOPPENG', pageW / 2, margin + 16, { align: 'center' });
+        doc.text('KEJAKSAAN REPUBLIK INDONESIA', pageW / 2, margin + 3, { align: 'center' });
+        doc.setFontSize(16);
+        doc.text('KEJAKSAAN TINGGI SULAWESI SELATAN', pageW / 2, margin + 10, { align: 'center' });
+        doc.setFontSize(20);
+        doc.text('KEJAKSAAN NEGERI SOPPENG', pageW / 2, margin + 18, { align: 'center' });
 
         doc.setFont('times', 'normal');
-        doc.setFontSize(9);
-        doc.text('Jl. Samudra No.18, Lemba, Watansoppeng, Kabupaten Soppeng, Sulawesi Selatan 90811', pageW / 2, margin + 22, { align: 'center' });
-        doc.text('Telp: 0853-9951-2452 | Website: https://kejari-soppeng.kejaksaan.go.id', pageW / 2, margin + 26, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text('Jl. Samudra No.18, Lemba, Watansoppeng, Kabupaten Soppeng, Sulawesi Selatan 90811', pageW / 2, margin + 24, { align: 'center' });
+        doc.text('Telp: 0853-9951-2452 | Website: kejari-soppeng.kejaksaan.go.id', pageW / 2, margin + 29, { align: 'center' });
 
         // Garis Ganda Pembatas Kop
-        doc.setDrawColor(30, 30, 30);
+        doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(1.0);
-        doc.line(margin, margin + 31, pageW - margin, margin + 31); // Garis tebal
+        doc.line(margin, margin + 33, pageW - margin, margin + 33); // Garis tebal
         doc.setLineWidth(0.3);
-        doc.line(margin, margin + 32.5, pageW - margin, margin + 32.5); // Garis tipis
+        doc.line(margin, margin + 34.5, pageW - margin, margin + 34.5); // Garis tipis
 
         // --- JUDUL LAPORAN ---
         doc.setFont('times', 'bold');
@@ -276,7 +277,7 @@ export default function ExportLaporan({
         doc.setFont('times', 'normal');
         doc.setFontSize(10);
         const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        doc.text(`Per Tanggal: ${tanggalCetak}`, pageW / 2, margin + 51, { align: 'center' });
+        doc.text(`Per Tanggal: ${tanggalCetak}`, pageW / 2, margin + 50, { align: 'center' });
       };
 
       // 4. Data Tabel
@@ -290,7 +291,7 @@ export default function ExportLaporan({
 
       // 5. Render Tabel Rapi
       autoTable(doc, {
-        startY: margin + 58,
+        startY: margin + 55,
         head: [['No', 'Nama Peminjam', 'Judul Buku / Aset', 'Tenggat', 'Status']],
         body: tableData,
         theme: 'grid',
@@ -392,6 +393,7 @@ export default function ExportLaporan({
 
   return (
     <>
+      <GlobalActionLoading isVisible={isExportingPDF} text="Mengekspor Laporan PDF..." />
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
         <button
           onClick={handleExportExcel}

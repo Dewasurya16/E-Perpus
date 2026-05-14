@@ -41,10 +41,17 @@ export default function ProfileMenu({ email, role }: { email: string, role: stri
           </span>
         </div>
         
-        {/* Lingkaran Avatar - Selalu Muncul */}
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1B4332] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm uppercase border border-white/10">
-          {email ? email.charAt(0) : "U"}
-        </div>
+        {/* Tombol Profil - Lebih jelas dan mudah ditekan */}
+        <Link
+          href="/profil"
+          title="Lihat Profil Saya"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#1B4332] text-white rounded-xl shadow-sm border border-[#143628] hover:bg-[#143628] hover:ring-2 hover:ring-emerald-400 hover:ring-offset-1 transition-all group"
+        >
+          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center font-black text-[10px] uppercase group-hover:scale-110 transition-transform">
+            {email ? email.charAt(0) : 'U'}
+          </div>
+          <span className="text-[11px] font-black uppercase tracking-widest hidden sm:block">Profil Saya</span>
+        </Link>
 
         {/* Tombol Logout - Di HP hanya ikon supaya hemat ruang */}
         <button 

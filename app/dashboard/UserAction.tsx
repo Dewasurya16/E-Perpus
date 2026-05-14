@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
+import GlobalActionLoading from "../components/GlobalActionLoading";
 
 export default function UserAction({ user }: { user: any }) {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function UserAction({ user }: { user: any }) {
 
   return (
     <>
+      <GlobalActionLoading isVisible={isLoading} text="Memproses Data..." />
       <div className="flex items-center justify-end gap-2">
         
         {/* Tombol ACC Cepat (Hanya muncul jika status masih pending) */}

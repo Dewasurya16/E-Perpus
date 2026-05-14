@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const QUICK_PROMPTS = [
   { icon: '🔍', label: 'Cari Buku Pidana',  text: 'Tolong carikan rekomendasi buku terkait Hukum Pidana yang ada di perpustakaan.' },
@@ -16,6 +17,7 @@ export default function AIAssistant() {
   const [input,    setInput]    = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Welcome message
   useEffect(() => {
@@ -54,6 +56,11 @@ export default function AIAssistant() {
       }
 
       setMessages((prev) => [...prev, { role: 'ai', text: data.reply }]);
+
+      // Segarkan halaman jika peminjaman berhasil agar tabel sirkulasi langsung update
+      if (data.reply.includes('Peminjaman Berhasil Dicatat')) {
+        router.refresh();
+      }
     } catch (error) {
       console.error(error);
       setMessages((prev) => [...prev, {

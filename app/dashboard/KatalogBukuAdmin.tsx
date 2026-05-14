@@ -6,6 +6,8 @@ import EditBookModal from './EditBookModal';
 import DeleteBookButton from './DeleteBookButton';
 import BacaPDFModal from './BacaPDFModal';
 import QRCodeModal from './QRCodeModal';
+import ExportKatalogBuku from './ExportKatalogBuku';
+import ImportBukuModal from './ImportBukuModal';
 
 /* ── Cover palette (12 warna) ─────────────────────────────────────────── */
 const COVERS = [
@@ -24,9 +26,9 @@ function stokLabel(stock: number): 'Tersedia' | 'Terbatas' | 'Habis' {
 
 const PER_PAGE = 12;
 
-interface KatalogProps { books: any[]; totalBooks?: number; }
+interface KatalogProps { books: any[]; totalBooks?: number; userEmail?: string; }
 
-export default function KatalogBukuAdmin({ books, totalBooks }: KatalogProps) {
+export default function KatalogBukuAdmin({ books, totalBooks, userEmail = '' }: KatalogProps) {
   const [search,     setSearch]     = useState('');
   const [catFilter,  setCatFilter]  = useState('');
   const [stokFilter, setStokFilter] = useState('');
@@ -86,7 +88,9 @@ export default function KatalogBukuAdmin({ books, totalBooks }: KatalogProps) {
             {totalBooks ?? books.length} judul terdaftar · Kelola stok, rak, dan cetak QR Code
           </p>
         </div>
-        <div className="self-start sm:self-auto">
+        <div className="self-start sm:self-auto flex items-center gap-2 flex-wrap">
+          <ImportBukuModal />
+          <ExportKatalogBuku books={filtered} />
           <AddBookModal />
         </div>
       </div>
@@ -234,7 +238,7 @@ export default function KatalogBukuAdmin({ books, totalBooks }: KatalogProps) {
                     </span>
                     {/* Mobile: selalu tampil; Desktop: muncul saat hover */}
                     <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <QRCodeModal book={book} />
+                      <QRCodeModal book={book} isLoggedIn={true} userEmail={userEmail} />
                       <EditBookModal book={book} />
                     </div>
                   </div>
@@ -295,7 +299,7 @@ export default function KatalogBukuAdmin({ books, totalBooks }: KatalogProps) {
                                border-t border-slate-100
                                sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
                   <BacaPDFModal url={book.pdf_url} compact />
-                  <QRCodeModal book={book} />
+                  <QRCodeModal book={book} isLoggedIn={true} userEmail={userEmail} />
                   <EditBookModal book={book} />
                   <DeleteBookButton bookId={book.id} bookTitle={book.title} />
                 </div>

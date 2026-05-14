@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { supabase } from '../../../lib/supabase';
 
 export async function POST(req: Request) {
   try {
+    const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value || 'AI_Guest';
     const apiKey = process.env.GEMINI_API_KEY?.trim();
 
     if (!apiKey) {
@@ -46,17 +49,17 @@ export async function POST(req: Request) {
     // ── 1. TARIK DATA BUKU ──────────────────────────────────────────────
     const { data: books, error: booksError } = await supabase
       .from('books')
-      .select('id, title, author, category, stock, rak, nomor_buku');
+      .select('id, title, author, category, stock, rak, nomor_buku, ringkasan');
 
     if (booksError) console.error('Error fetching books:', booksError);
 
-    // MENGGANTI 'Kategori' MENJADI 'Klasifikasi' DAN MENAMBAHKAN 'ISBN'
+    // MENGGANTI 'Kategori' MENJADI 'Klasifikasi' DAN MENAMBAHKAN 'ISBN' & 'RINGKASAN'
     const catalogContext =
       books && books.length > 0
         ? books
             .map(
               (b) =>
-                `- ID: ${b.id} | Judul: "${b.title}" | Penulis: ${b.author || 'Anonim'} | ISBN: ${b.nomor_buku || 'Tidak Ada'} | Klasifikasi: ${b.category || 'Umum'} | Rak: ${b.rak || 'TBA'} | Sisa Stok: ${b.stock}`
+                `- ID: ${b.id} | Judul: "${b.title}" | Penulis: ${b.author || 'Anonim'} | ISBN: ${b.nomor_buku || 'Tidak Ada'} | Klasifikasi: ${b.category || 'Umum'} | Rak: ${b.rak || 'TBA'} | Sisa Stok: ${b.stock}\n  Ringkasan Sinopsis: ${b.ringkasan ? b.ringkasan.replace(/\n/g, ' ') : 'Belum ada ringkasan'}`
             )
             .join('\n')
         : 'Saat ini belum ada buku di database.';
@@ -87,8 +90,9 @@ Karakter Anda: Sangat ramah, empatik, cerdas, dan luwes. Anda berbicara dengan b
 
 PANDUAN MENJAWAB (SANGAT PENTING):
 
-1. PENCARIAN BUKU (DETAIL & SMART FILTER):
+1. PENCARIAN BUKU & SINOPSIS (DETAIL & SMART FILTER):
    - Jika pengguna mencari buku, baca DATA BUKU dengan sangat teliti. Sebutkan maksimal 3-5 buku yang paling relevan.
+   - Jika pengguna bertanya tentang "Apa isi buku X?" atau "Buku tentang apa ini?", Anda WAJIB membaca bagian "Ringkasan Sinopsis" dari DATA BUKU dan merangkum isinya dengan gaya penceritaan yang menarik untuk memancing minat baca.
    - Berikan rinciannya dengan format yang elegan ke bawah:
      Judul: **[Judul Buku]** karya [Penulis]
      ISBN: [ISBN]
@@ -199,6 +203,7 @@ FORMAT JAWABAN (KECUALI SAAT BOOKING):
               const { error: loanError } = await supabase.from('loans').insert([
                 {
                   book_id: command.book_id,
+                  user_email: userEmail,
                   employee_name: command.nama,
                   due_date: dueDate.toISOString(),
                   status: 'DIPINJAM',

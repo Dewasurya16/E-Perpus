@@ -12,7 +12,11 @@ import Bukutamuadmintable from '../buku-tamu/components/Bukutamuadmintable';
 import KatalogBukuAdmin from './KatalogBukuAdmin'; 
 import SirkulasiTable from './Sirkulasitable';
 import PegawaiTable from './PegawaiTable';
+import CetakPosterModal from './CetakPosterModal';
+import CetakSuratPeringatan from './CetakSuratPeringatan';
 import Image from 'next/image';
+import DashboardCharts from './DashboardCharts';
+import ExportPerPegawai from './ExportPerPegawai';
 
 // 👇 TAMBAHAN UNTUK MEMATIKAN CACHE NEXT.JS 👇
 export const dynamic = 'force-dynamic';
@@ -136,16 +140,19 @@ export default async function DashboardPage(props: any) {
   ];
 
   return (
-    <div className="flex h-screen bg-[#F4F6F4] text-slate-800 font-sans overflow-hidden">
+    <div className="flex h-screen bg-[var(--background)] text-slate-800 font-sans overflow-hidden">
 
       {/* ══════════════════════════════════════════
           SIDEBAR
       ══════════════════════════════════════════ */}
-      <aside className="hidden lg:flex flex-col w-[260px] bg-white border-r border-slate-200/60 z-50 flex-shrink-0">
-        <div className="h-20 flex items-center gap-4 px-7 border-b border-slate-100"><div className="w-10 h-10 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
-            <Image 
-              src="/logo-kejaksaan.png" 
-              alt="Logo Kejaksaan" 
+      <aside className="hidden lg:flex flex-col w-[260px] bg-white border-r border-slate-200/50 z-50 flex-shrink-0 shadow-[2px_0_20px_rgba(0,0,0,0.04)]">
+        {/* Sidebar header */}
+        <div className="h-20 flex items-center gap-4 px-6 border-b border-slate-100 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f2a1c]/3 to-transparent pointer-events-none" />
+          <div className="w-10 h-10 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+            <Image
+              src="/logo-kejaksaan.png"
+              alt="Logo Kejaksaan"
               fill
               className="object-contain rounded-full"
             />
@@ -156,7 +163,10 @@ export default async function DashboardPage(props: any) {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        {/* Accent line */}
+        <div className="h-[2px] bg-gradient-to-r from-[#1B4332] via-emerald-400 to-transparent" />
+
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto styled-scrollbar">
           <p className="px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Panel Kontrol</p>
           {navItems.map(item => {
             const isActive = activeTab === item.tab;
@@ -164,18 +174,22 @@ export default async function DashboardPage(props: any) {
               <Link
                 key={item.tab}
                 href={`?tab=${item.tab}`}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-200 group ${
                   isActive
-                    ? 'bg-[#1B4332] text-white shadow-md shadow-[#1B4332]/20'
+                    ? 'bg-[var(--green-main)] text-white shadow-[var(--shadow-md)]'
                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <span className={`text-base transition-transform ${isActive ? '' : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110'}`}>
+                <span className={`text-base transition-all duration-200 ${
+                  isActive ? 'scale-110' : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110'
+                }`}>
                   {item.icon}
                 </span>
                 <span className="flex-1">{item.label}</span>
                 {item.badge > 0 && (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'
+                  }`}>
                     {item.badge}
                   </span>
                 )}
@@ -185,16 +199,16 @@ export default async function DashboardPage(props: any) {
 
           <div className="pt-4 mt-4 border-t border-slate-100">
             <p className="px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Akses Cepat</p>
-            <Link href="/katalog" className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
-              <span className="text-base grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100">🌐</span>
+            <Link href="/katalog" className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 hover:bg-emerald-50 hover:text-emerald-800 transition-all duration-200 group">
+              <span className="text-base grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200">🌐</span>
               <span>Lihat Katalog</span>
             </Link>
           </div>
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="w-8 h-8 bg-[#1B4332] text-white rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0">
+          <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-slate-50 rounded-xl border border-emerald-100/50">
+            <div className="w-8 h-8 bg-gradient-to-br from-[var(--green-main)] to-emerald-600 text-white rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 shadow-md shadow-emerald-900/20">
               {userEmail.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -230,7 +244,7 @@ export default async function DashboardPage(props: any) {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:block">
-              <ScanBukuModal isLoggedIn={true} />
+              <ScanBukuModal isLoggedIn={true} userEmail={userEmail} />
             </div>
             <ProfileMenu email={userEmail} role={session} />
           </div>
@@ -247,57 +261,64 @@ export default async function DashboardPage(props: any) {
               <div className="space-y-6">
 
                 {/* Hero Banner */}
-                <div className="bg-gradient-to-br from-[#0f2e22] via-[#1B4332] to-[#255940] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border border-[#3b7a5d]/30">
-                  <div className="absolute -top-20 -right-20 w-72 h-72 bg-emerald-400/10 rounded-full blur-[60px] pointer-events-none" />
-                  <div className="absolute top-6 right-6 opacity-[0.06] text-[7rem] leading-none pointer-events-none select-none font-black">⚖</div>
+                <div className="anim-up-1 bg-gradient-to-br from-[#0f2e22] via-[var(--green-main)] to-[#255940] rounded-2xl p-8 text-white shadow-[var(--shadow-md)] relative overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border border-[#3b7a5d]/30 mb-8">
+                  <div className="anim-blob absolute -top-20 -right-20 w-72 h-72 bg-emerald-400/10 rounded-full blur-[60px] pointer-events-none" />
+                  <div className="anim-blob-d absolute bottom-0 left-16 w-48 h-48 bg-amber-400/8 rounded-full blur-[40px] pointer-events-none" />
+                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '36px 36px' }} />
+                  <div className="absolute top-6 right-6 opacity-[0.06] text-[7rem] leading-none pointer-events-none select-none font-black font-display">⚖</div>
                   <div className="relative z-10">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full text-[9px] font-bold uppercase tracking-widest mb-4 border border-white/20">
-                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Panel Admin Aktif
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] mb-4 border border-white/20 shadow-sm">
+                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-[pulseRing_2s_infinite]" /> Panel Admin Aktif
                     </span>
-                    <h2 className="text-2xl sm:text-4xl font-black tracking-tight mb-1">
+                    <h2 className="text-3xl sm:text-4xl font-black font-display tracking-tight mb-2">
                       Selamat Datang,<br />
-                      <span className="text-emerald-300">Administrator!</span>
+                      <span className="shimmer-green">Administrator!</span>
                     </h2>
-                    <p className="text-slate-400 text-sm font-medium">
-                      {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    <p className="text-emerald-100/80 text-[13px] font-medium">
+                      Pantau aktivitas dan statistik perpustakaan secara real-time.
                     </p>
                   </div>
-                  <div className="relative z-10 w-full lg:w-auto">
+                  <div className="relative z-10 w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col gap-3">
                     <ExportLaporan dataBuku={books || []} dataPinjam={loans || []} />
+                    <CetakPosterModal />
                   </div>
                 </div>
 
-                {/* Stat Cards — 4 kartu + 1 AI card */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Stat Cards - Clean SaaS style */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {[
-                    { label: 'Total Koleksi',   value: totalBooks,       icon: '📚', color: 'blue',    sub: `${outOfStock.length} stok habis` },
-                    { label: 'Aktif Dipinjam',  value: activeLoans,      icon: '⏳', color: 'amber',   sub: `${overdueLoans.length} terlambat` },
-                    { label: 'Tingkat Kembali', value: `${returnRate}%`, icon: '✅', color: 'emerald', sub: `${returnedLoans} total` },
-                    { label: 'Perlu ACC',        value: pendingUsers,     icon: '👥', color: 'violet',  sub: 'akun baru' },
-                  ].map(stat => {
-                    const colors: Record<string, string> = {
-                      blue:    'from-blue-50 to-blue-100/50 text-blue-500',
-                      amber:   'from-amber-50 to-amber-100/50 text-amber-500',
-                      emerald: 'from-emerald-50 to-emerald-100/50 text-emerald-600',
-                      violet:  'from-violet-50 to-violet-100/50 text-violet-500',
-                    };
-                    return (
-                      <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br flex-shrink-0 flex items-center justify-center text-2xl ${colors[stat.color]}`}>
-                          {stat.icon}
+                    { label: 'Total Koleksi',   value: totalBooks,       icon: '📚', sub: `${outOfStock.length} stok habis`, trend: 'Update' },
+                    { label: 'Aktif Dipinjam',  value: activeLoans,      icon: '⏳', sub: `${overdueLoans.length} terlambat`, trend: overdueLoans > 0 ? 'Warning' : 'Aman' },
+                    { label: 'Tingkat Kembali', value: `${returnRate}%`, icon: '✅', sub: `${returnedLoans} total`, trend: 'Stabil' },
+                    { label: 'Perlu ACC',        value: pendingUsers,     icon: '👥', sub: 'akun baru', trend: pendingUsers > 0 ? 'Action' : 'Aman' },
+                  ].map((stat, i) => (
+                      <div
+                        key={stat.label}
+                        className="anim-up bg-white rounded-[1.25rem] border border-slate-200 p-6 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:-translate-y-1 transition-all duration-300"
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <div className="flex justify-between items-start mb-5">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-xl border border-slate-100 shadow-sm">
+                            {stat.icon}
+                          </div>
+                          <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wider ${
+                            stat.trend === 'Warning' || stat.trend === 'Action' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                            stat.trend === 'Stabil' || stat.trend === 'Aman' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            'bg-blue-50 text-blue-600 border border-blue-100'
+                          }`}>
+                            {stat.trend}
+                          </span>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-2xl font-black text-slate-800 leading-none">{stat.value}</p>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
-                          <p className="text-[9px] font-medium text-slate-400 mt-0.5">{stat.sub}</p>
-                        </div>
+                        <p className="text-[2rem] font-black text-slate-900 leading-none font-display mb-2">{stat.value}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{stat.label}</p>
+                        <div className="h-px w-full bg-slate-100 my-3" />
+                        <p className="text-[11px] font-semibold text-slate-500">{stat.sub}</p>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
 
                 {/* Card Lexi AI — full-width highlight */}
-                <div className="bg-gradient-to-r from-emerald-950 to-[#1B4332] rounded-2xl border border-emerald-800/30 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div className="bg-gradient-to-r from-emerald-950 to-[var(--green-main)] rounded-2xl border border-emerald-800/30 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-500/30 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🤖</div>
                     <div>
@@ -352,12 +373,7 @@ export default async function DashboardPage(props: any) {
                                 {daysLate} hari terlambat
                               </p>
                             </div>
-                            <Link
-                              href="?tab=sirkulasi"
-                              className="text-[9px] font-black bg-rose-500 text-white px-3 py-1.5 rounded-lg hover:bg-rose-600 transition-colors uppercase tracking-widest flex-shrink-0"
-                            >
-                              Tindak
-                            </Link>
+                            <CetakSuratPeringatan loan={loan} daysLate={daysLate} />
                           </div>
                         );
                       })}
@@ -395,8 +411,8 @@ export default async function DashboardPage(props: any) {
                   </div>
                 </div>
 
-                {/* Leaderboard & Kategori */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Leaderboard */}
+                <div className="grid grid-cols-1 gap-6">
                   {/* Top Readers */}
                   <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
                     <h3 className="font-black text-slate-800 flex items-center gap-2 mb-5 text-sm">
@@ -423,34 +439,11 @@ export default async function DashboardPage(props: any) {
                     </div>
                   </div>
 
-                  {/* Distribusi Kategori */}
-                  <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <h3 className="font-black text-slate-800 flex items-center gap-2 mb-5 text-sm">
-                      <span className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-base">📊</span>
-                      Distribusi Kategori
-                    </h3>
-                    <div className="space-y-4">
-                      {topCategories.length === 0 ? (
-                        <p className="text-sm text-slate-400 text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">Katalog kosong.</p>
-                      ) : topCategories.map(([cat, count]) => {
-                        const pct = Math.round((count / totalBooks) * 100);
-                        return (
-                          <div key={cat}>
-                            <div className="flex justify-between items-center mb-1.5">
-                              <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{cat}</span>
-                              <span className="text-[9px] font-black text-[#1B4332] bg-emerald-50 px-2 py-0.5 rounded-md">
-                                {count} · {pct}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                              <div className="bg-gradient-to-r from-[#1B4332] to-emerald-500 h-2 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  {/* Distribusi Kategori (Dihapus, diganti dengan DashboardCharts di bawah) */}
                 </div>
+
+                {/* GRAFIK INTERAKTIF (Recharts) */}
+                <DashboardCharts loans={loans || []} books={books || []} />
               </div>
             )}
 
@@ -458,7 +451,7 @@ export default async function DashboardPage(props: any) {
                 TAB: KATALOG BUKU
             ════════════════════════ */}
             {activeTab === 'buku' && (
-              <KatalogBukuAdmin books={books || []} totalBooks={totalBooks} />
+              <KatalogBukuAdmin books={books || []} totalBooks={totalBooks} userEmail={userEmail} />
             )}
 
             {/* ════════════════════════
@@ -518,6 +511,9 @@ export default async function DashboardPage(props: any) {
                   totalAll={loans?.length || 0}
                   overdueCount={overdueLoans.length}
                 />
+
+                {/* ── EXPORT PER PEGAWAI ── */}
+                <ExportPerPegawai loans={loans || []} />
               </div>
             )}
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
+import GlobalActionLoading from '../components/GlobalActionLoading';
 
 /* ── Spinner ───────────────────────────────────────────────────────────── */
 function Spinner() {
@@ -125,19 +126,7 @@ export default function AddBookModal() {
           onClick={e => e.stopPropagation()}
         >
           {/* Loading overlay */}
-          {loading && (
-            <div className="absolute inset-0 z-20 bg-white/80 backdrop-blur-sm rounded-3xl
-                            flex flex-col items-center justify-center gap-3">
-              <div style={{
-                width: 48, height: 48,
-                border: '4px solid #e2e8f0', borderTopColor: '#1B4332',
-                borderRadius: '50%', animation: 'spin .7s linear infinite',
-              }} />
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                Menyimpan buku…
-              </p>
-            </div>
-          )}
+          <GlobalActionLoading isVisible={loading} text="Menyimpan buku..." />
 
           {/* ── Header ──────────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-4"

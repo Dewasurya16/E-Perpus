@@ -1,41 +1,36 @@
-// SIMPAN FILE INI DI: app/buku/[id]/page.tsx
-// (Buat folder baru: app/buku/[id]/)
-
 import { supabase } from '../../../lib/supabase';
-import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import BorrowModal from '../../katalog/BorrowModal';
+import ShareButton from './ShareButton';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-/* ── Warna cover berdasarkan hash ID ─────────────────────────────────── */
-const COVERS = [
-  ['#1B4332', '#52B788'], ['#1D3557', '#457B9D'], ['#6B2D8B', '#C9A0DC'],
-  ['#7B2D00', '#D4956A'], ['#2D4739', '#74C69D'], ['#0A3D62', '#60A3D9'],
-  ['#4A1942', '#C9579C'], ['#1A3A1A', '#76B947'], ['#5C3317', '#C4813B'],
-  ['#1B3A5C', '#5899D8'], ['#3B1F2B', '#C06D8A'], ['#1C3D2E', '#4CA37A'],
-];
-function coverColor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
-  return COVERS[Math.abs(h) % COVERS.length];
-}
+// ── Warna cover per kategori ───────────────────────────────────
+const getCoverStyle = (category: string) => {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('pidana'))   return { bg: 'from-rose-900 via-rose-800 to-red-950', icon: '⚖️', accent: '#fca5a5' };
+  if (cat.includes('perdata'))  return { bg: 'from-blue-900 via-blue-800 to-indigo-950', icon: '📜', accent: '#93c5fd' };
+  if (cat.includes('tata'))     return { bg: 'from-violet-900 via-violet-800 to-purple-950', icon: '🏛️', accent: '#c4b5fd' };
+  if (cat.includes('keuangan')) return { bg: 'from-amber-800 via-amber-700 to-yellow-950', icon: '💰', accent: '#fcd34d' };
+  if (cat.includes('korupsi'))  return { bg: 'from-orange-800 via-orange-700 to-red-950', icon: '🔍', accent: '#fdba74' };
+  if (cat.includes('ham'))      return { bg: 'from-teal-800 via-teal-700 to-cyan-950', icon: '🤝', accent: '#5eead4' };
+  if (cat.includes('pajak'))    return { bg: 'from-green-800 via-green-700 to-emerald-950', icon: '📊', accent: '#86efac' };
+  return { bg: 'from-[#1B4332] via-[#2D6A4F] to-[#0a1f18]', icon: '📚', accent: '#6ee7b7' };
+};
 
-function stokInfo(stock: number) {
-  if (stock > 3) return { label: 'Tersedia',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' };
-  if (stock > 0) return { label: 'Terbatas',  cls: 'bg-amber-50  text-amber-700  border-amber-200',   dot: 'bg-amber-400'  };
-  return           { label: 'Habis',     cls: 'bg-rose-50   text-rose-700   border-rose-200',     dot: 'bg-rose-400'   };
-}
+export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-/* ════════════════════════════════════════════════════════════════════════ */
-export default async function BukuPublikPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const { id } = params;
+  const cookieStore = await cookies();
+  const session   = cookieStore.get('session')?.value;
+  const userEmail = cookieStore.get('user_email')?.value || '';
+  const isLoggedIn = !!session;
 
-  /* Ambil data buku dari Supabase */
+  // Fetch buku
   const { data: book, error } = await supabase
     .from('books')
     .select('*')
@@ -44,190 +39,197 @@ export default async function BukuPublikPage({
 
   if (error || !book) notFound();
 
-  /* Cek status login dari cookie */
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;   // 'admin' | 'user' | undefined
-  const userEmail = cookieStore.get('user_email')?.value;
-  const isLoggedIn = !!session && !!userEmail;
+  // Fetch buku terkait (kategori sama, bukan buku ini)
+  const { data: related } = await supabase
+    .from('books')
+    .select('id, title, author, category, stock, rating')
+    .eq('category', book.category)
+    .neq('id', id)
+    .limit(4);
 
-  const [bg, ac] = coverColor(id);
-  const stok = stokInfo(book.stock ?? 0);
+  const cover = getCoverStyle(book.category);
+  const ratingStars = Math.round(book.rating || 0);
+  const isHabis = book.stock === 0;
 
   return (
-    <div className="min-h-screen bg-[#F4F6F4] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F3F6F4] font-sans">
 
-      {/* ── TOP BAR ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b
-                         border-slate-100 px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-[#1B4332]">
-          <span className="text-xl">📚</span>
-          <div>
-            <p className="font-black text-sm leading-none">E-PERPUS</p>
-            <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">
-              Kejaksaan Negeri Soppeng
-            </p>
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 relative flex-shrink-0">
+              <Image src="/logo-kejaksaan.png" alt="Logo" fill className="object-contain rounded-full" />
+            </div>
+            <div className="flex items-center gap-2 text-[11px]">
+              <Link href="/" className="font-bold text-slate-400 hover:text-emerald-600 transition-colors">Beranda</Link>
+              <span className="text-slate-300">/</span>
+              <Link href="/katalog" className="font-bold text-slate-400 hover:text-emerald-600 transition-colors">Katalog</Link>
+              <span className="text-slate-300">/</span>
+              <span className="font-black text-slate-700 line-clamp-1">{book.title}</span>
+            </div>
           </div>
-        </Link>
-
-        {isLoggedIn ? (
-          <Link
-            href="/katalog"
-            className="text-[10px] font-black text-[#1B4332] bg-emerald-50
-                       border border-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-widest"
-          >
-            ← Katalog
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="text-[10px] font-black text-white bg-[#1B4332]
-                       px-3 py-1.5 rounded-lg uppercase tracking-widest"
-          >
-            Login
-          </Link>
-        )}
+          {isLoggedIn ? (
+            <Link href="/katalog" className="px-4 py-2 bg-[#1B4332] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#143628] transition-all">
+              ← Katalog
+            </Link>
+          ) : (
+            <Link href="/login" className="px-4 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
+              🔐 Login
+            </Link>
+          )}
+        </div>
       </header>
 
-      {/* ── HERO COVER ───────────────────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden px-6 pt-10 pb-16 flex flex-col
-                   items-center text-center"
-        style={{ background: `linear-gradient(160deg, ${bg} 0%, ${ac}66 100%)` }}
-      >
-        {/* Spine accent */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-3 opacity-50"
-          style={{ background: ac }}
-        />
+      <main className="max-w-5xl mx-auto px-5 py-8 space-y-8">
 
-        {/* Kategori badge */}
-        <span className="inline-block mb-4 px-3 py-1 bg-white/20 backdrop-blur-sm
-                         border border-white/30 text-white text-[10px] font-black
-                         uppercase tracking-widest rounded-full">
-          {book.category || 'Umum'}
-        </span>
+        {/* Hero Card */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col md:flex-row">
 
-        {/* Judul */}
-        <h1 className="text-white font-black text-2xl sm:text-3xl leading-tight
-                       max-w-xs sm:max-w-md drop-shadow-lg mb-2">
-          {book.title}
-        </h1>
-
-        {book.author && (
-          <p className="text-white/75 text-sm font-medium mt-1">
-            oleh {book.author}
-          </p>
-        )}
-        {book.publisher && (
-          <p className="text-white/50 text-xs mt-0.5">{book.publisher}</p>
-        )}
-
-        {/* Status stok */}
-        <span className={`mt-4 inline-flex items-center gap-1.5 px-3 py-1.5
-                         rounded-full border text-xs font-black bg-white ${stok.cls}`}>
-          <span className={`w-2 h-2 rounded-full ${stok.dot}`} />
-          {stok.label} · {book.stock ?? 0} tersedia
-        </span>
-      </div>
-
-      {/* ── CARD UTAMA ───────────────────────────────────────────────── */}
-      <main className="flex-1 px-4 -mt-6 max-w-lg mx-auto w-full pb-10">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-
-          {/* Info grid */}
-          <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
-            <div className="p-4 text-center">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Rak</p>
-              <p className="font-black text-slate-800 text-sm">{book.rak || '—'}</p>
-            </div>
-            <div className="p-4 text-center">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stok</p>
-              <p className={`font-black text-sm ${(book.stock ?? 0) > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                {book.stock ?? 0} pcs
+          {/* Cover */}
+          <div className={`relative bg-gradient-to-br ${cover.bg} flex-shrink-0 w-full md:w-64 lg:w-72 h-56 md:h-auto flex items-center justify-center overflow-hidden`}>
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+            <div className="relative text-center px-6">
+              <div className="text-7xl mb-4 drop-shadow-xl">{cover.icon}</div>
+              <p className="text-white/90 text-xs font-black leading-tight line-clamp-4 drop-shadow-md">
+                {book.title}
               </p>
             </div>
-            <div className="p-4 text-center">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ISBN</p>
-              <p className="font-black text-slate-800 text-[11px] break-all">
-                {book.nomor_buku || '—'}
-              </p>
+            {isHabis && (
+              <div className="absolute inset-0 bg-slate-900/70 flex items-center justify-center">
+                <span className="bg-white text-slate-800 text-xs font-black uppercase px-4 py-2 rounded-full tracking-widest shadow-lg">
+                  Stok Habis
+                </span>
+              </div>
+            )}
+            <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1 rounded-full">
+              {book.stock} pcs
             </div>
           </div>
 
-          {/* Ringkasan */}
-          {book.ringkasan && (
-            <div className="px-5 py-4 border-b border-slate-100">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                Ringkasan
-              </p>
-              <p className="text-sm text-slate-600 leading-relaxed">{book.ringkasan}</p>
+          {/* Info */}
+          <div className="flex-1 p-6 md:p-8 flex flex-col">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {book.category && (
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded border border-emerald-100 text-[9px] font-black uppercase tracking-widest">
+                  {book.category}
+                </span>
+              )}
+              {book.rak && (
+                <span className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded border border-slate-100 text-[9px] font-bold">
+                  📍 Rak {book.rak}
+                </span>
+              )}
+              {book.nomor_buku && (
+                <span className="px-2.5 py-1 bg-slate-50 text-slate-500 rounded border border-slate-100 text-[9px] font-mono">
+                  ISBN: {book.nomor_buku}
+                </span>
+              )}
             </div>
-          )}
 
-          {/* ── AKSI ─────────────────────────────────────────────────── */}
-          <div className="p-5 space-y-3">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight mb-2">
+              {book.title}
+            </h1>
+            {book.author && (
+              <p className="text-sm text-slate-500 font-medium mb-1">oleh <span className="font-bold text-slate-700">{book.author}</span></p>
+            )}
+            {book.publisher && (
+              <p className="text-[11px] text-slate-400 font-medium mb-4">Penerbit: {book.publisher}</p>
+            )}
 
-            {/* Baca E-Book */}
-            {book.pdf_url ? (
-              <a
-                href={book.pdf_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3.5
-                           bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200
-                           rounded-2xl font-black text-xs uppercase tracking-widest
-                           transition-all active:scale-95"
-              >
-                <span className="text-base">📖</span> Baca E-Book
-              </a>
-            ) : (
-              <div className="flex items-center justify-center gap-2 w-full py-3.5
-                              bg-slate-50 text-slate-400 border border-dashed border-slate-200
-                              rounded-2xl font-black text-xs uppercase tracking-widest">
-                <span>🔒</span> E-Book Belum Tersedia
+            {/* Rating */}
+            {(book.rating_count || 0) > 0 && (
+              <div className="flex items-center gap-2 mb-5">
+                <div className="flex items-center gap-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= ratingStars ? '#F59E0B' : '#E2E8F0'}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm font-black text-slate-700">{Number(book.rating).toFixed(1)}</span>
+                <span className="text-[11px] text-slate-400">({book.rating_count} ulasan)</span>
               </div>
             )}
 
-            {/* Pinjam / Login */}
-            {isLoggedIn ? (
-              <Link
-                href="/katalog"
-                className="flex items-center justify-center gap-2 w-full py-3.5
-                           bg-gradient-to-r from-[#1B4332] to-emerald-600
-                           hover:from-[#143326] hover:to-emerald-700 text-white
-                           rounded-2xl font-black text-xs uppercase tracking-widest
-                           shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
-              >
-                <span className="text-base">📚</span> Pinjam di Katalog
-              </Link>
-            ) : (
-              <Link
-                href={`/login?redirect=/buku/${id}`}
-                className="flex items-center justify-center gap-2 w-full py-3.5
-                           bg-gradient-to-r from-[#1B4332] to-emerald-600
-                           hover:from-[#143326] hover:to-emerald-700 text-white
-                           rounded-2xl font-black text-xs uppercase tracking-widest
-                           shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
-              >
-                <span className="text-base">🔐</span> Login untuk Pinjam
-              </Link>
+            {/* Ringkasan */}
+            {book.ringkasan && (
+              <div className="flex-1 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ringkasan</p>
+                <p className="text-[13px] text-slate-600 leading-relaxed font-medium">{book.ringkasan}</p>
+              </div>
             )}
-          </div>
 
-          {/* ID footer */}
-          <p className="text-center text-[9px] text-slate-300 font-mono pb-4 px-5">
-            ID: {book.id}
-          </p>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+              <div className="flex flex-1 gap-2">
+                {book.pdf_url && (
+                  <a
+                    href={book.pdf_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 text-center py-3.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                  >
+                    📖 Baca E-Book
+                  </a>
+                )}
+                <ShareButton title={book.title} />
+              </div>
+              {isLoggedIn && userEmail ? (
+                <div className="flex-1">
+                  <BorrowModal book={book} userEmail={userEmail} />
+                </div>
+              ) : (
+                <Link
+                  href={`/login?redirect=/buku/${id}`}
+                  className="flex-1 text-center py-3.5 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2"
+                >
+                  🔐 Login untuk Pinjam
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
 
-        <p className="text-center mt-4">
-          <Link
-            href="/katalog"
-            className="text-xs text-slate-400 hover:text-[#1B4332] font-bold transition-colors"
-          >
-            ← Lihat Katalog Lengkap
+        {/* Buku Terkait */}
+        {related && related.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-1 h-5 bg-[#1B4332] rounded-full" />
+              <h2 className="font-black text-slate-800 text-base">Buku Terkait — {book.category}</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {related.map(b => {
+                const c = getCoverStyle(b.category || '');
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/buku/${b.id}`}
+                    className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                  >
+                    <div className={`h-24 bg-gradient-to-br ${c.bg} flex items-center justify-center text-3xl`}>
+                      {c.icon}
+                    </div>
+                    <div className="p-3">
+                      <p className="text-[11px] font-black text-slate-800 line-clamp-2 leading-snug mb-1">{b.title}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{b.author || '—'}</p>
+                      <span className={`inline-block mt-2 text-[9px] font-black px-2 py-0.5 rounded-full ${b.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>
+                        {b.stock > 0 ? `${b.stock} Tersedia` : 'Habis'}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Back link */}
+        <div className="text-center pb-8">
+          <Link href="/katalog" className="inline-flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-[#1B4332] transition-colors">
+            ← Kembali ke Katalog
           </Link>
-        </p>
+        </div>
       </main>
     </div>
   );

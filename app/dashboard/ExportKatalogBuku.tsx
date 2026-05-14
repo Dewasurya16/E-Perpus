@@ -1,46 +1,30 @@
 'use client';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import GlobalActionLoading from '../../components/GlobalActionLoading';
+import GlobalActionLoading from '../components/GlobalActionLoading';
 
 // ── Tipe ─────────────────────────────────────────────────────
-type BukuTamuEntry = {
+type Book = {
   id: string;
-  nama: string;
-  bidang?: string | null;
-  asal_instansi?: string | null;
-  keperluan: string;
-  pesan?: string | null;
-  ttd_data?: string | null;
-  status: string;
-  created_at: string;
+  title: string;
+  author?: string;
+  publisher?: string;
+  category?: string;
+  nomor_buku?: string;
+  stock: number;
+  rak?: string;
+  pdf_url?: string;
+  ringkasan?: string;
 };
 
 // ── Helper ────────────────────────────────────────────────────
-function formatTanggal(iso: string) {
-  return new Date(iso).toLocaleDateString('id-ID', {
-    day: '2-digit', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-function formatTanggalPendek(iso: string) {
-  return new Date(iso).toLocaleDateString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
-}
-
 function formatTanggalFormal(date = new Date()) {
   return date.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
-}
-
-function getBidang(e: BukuTamuEntry) {
-  return e.bidang || e.asal_instansi || '—';
 }
 
 // ── FIX: Flatten canvas ke background putih sebelum export ───
@@ -108,7 +92,6 @@ function PegawaiSignaturePad({
     const onEnd = () => {
       if (!isDrawing.current) return;
       isDrawing.current = false;
-      // FIX: Flatten ke background putih agar TTD tampil di PDF
       setTtdDataUrl(getCanvasDataUrlWithWhiteBg(canvas));
     };
 
@@ -209,7 +192,7 @@ function PegawaiSignaturePad({
 }
 
 // ── Komponen Utama ────────────────────────────────────────────
-export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }) {
+export default function ExportKatalogBuku({ books }: { books: Book[] }) {
   const [mounted, setMounted] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -218,40 +201,42 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
 
   // ── EXPORT EXCEL ─────────────────────────────────────────────
   const handleExportExcel = () => {
-    const rows = entries.map((e, i) => ({
+    const rows = books.map((b, i) => ({
       'No': i + 1,
-      'Tanggal': formatTanggal(e.created_at),
-      'Nama': e.nama,
-      'Bidang / Instansi': getBidang(e),
-      'Keperluan / Tujuan': e.keperluan,
-      'Kritik / Saran': e.pesan || '—',
-      'Status': e.status,
+      'Judul Buku': b.title,
+      'Penulis': b.author || '—',
+      'Penerbit': b.publisher || '—',
+      'Klasifikasi / Kategori': b.category || '—',
+      'ISBN / Nomor Buku': b.nomor_buku || '—',
+      'Lokasi Rak': b.rak || '—',
+      'Sisa Stok': b.stock,
+      'Ringkasan': b.ringkasan || '—',
+      'Link E-Book': b.pdf_url || '—',
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
 
     ws['!cols'] = [
-      { wch: 5 }, { wch: 22 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 40 }, { wch: 12 },
+      { wch: 5 }, { wch: 45 }, { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 50 }, { wch: 30 },
     ];
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Buku Tamu');
+    XLSX.utils.book_append_sheet(wb, ws, 'Katalog Buku');
 
     const infoData = [
-      ['BUKU TAMU PERPUSTAKAAN', ''],
+      ['KATALOG BUKU PERPUSTAKAAN', ''],
       ['Kejaksaan Negeri Soppeng', ''],
       ['Dicetak pada:', formatTanggalFormal()],
-      ['Total Kunjungan:', entries.length],
+      ['Total Koleksi:', books.length],
     ];
     const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
     wsInfo['!cols'] = [{ wch: 25 }, { wch: 35 }];
     XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
 
-    XLSX.writeFile(wb, `BukuTamu_KejariSoppeng_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `Katalog_Buku_KejariSoppeng_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // ── EXPORT PDF (Kop Surat + TTD + Tabel Rapi) ────────────────
-  // FIX: Jadikan async agar bisa fetch logo seperti ExportLaporan
   const generatePDF = async ({
     nama: namaPegawai,
     nip: nipPegawai,
@@ -293,7 +278,7 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
           doc.setFont('times', 'italic');
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
-          doc.text('Buku Tamu Perpustakaan — Kejaksaan Negeri Soppeng (Lanjutan)', pageW / 2, margin - 5, { align: 'center' });
+          doc.text('Katalog Buku Perpustakaan — Kejaksaan Negeri Soppeng (Lanjutan)', pageW / 2, margin - 5, { align: 'center' });
           doc.setDrawColor(15, 42, 28);
           doc.setLineWidth(0.3);
           doc.line(margin, margin - 2, pageW - margin, margin - 2);
@@ -338,7 +323,7 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
         // Judul Dokumen
         doc.setFont('times', 'bold');
         doc.setFontSize(12);
-        doc.text('REKAPITULASI BUKU TAMU PERPUSTAKAAN', pageW / 2, margin + 44, { align: 'center' });
+        doc.text('KATALOG BUKU PERPUSTAKAAN', pageW / 2, margin + 44, { align: 'center' });
 
         doc.setFont('times', 'normal');
         doc.setFontSize(10);
@@ -347,15 +332,16 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
       };
 
       // 4. Data Tabel
-      const tableHead = [['No', 'Tanggal', 'Nama Pengunjung', 'Bidang / Instansi', 'Keperluan / Tujuan', 'Kritik / Saran', 'Tanda Tangan']];
-      const tableBody: any[][] = entries.map((e, i) => [
+      const tableHead = [['No', 'Judul Buku', 'Penulis', 'Penerbit', 'Klasifikasi', 'ISBN / No. Buku', 'Rak', 'Stok']];
+      const tableBody: any[][] = books.map((b, i) => [
         i + 1,
-        formatTanggalPendek(e.created_at),
-        e.nama,
-        getBidang(e),
-        e.keperluan,
-        e.pesan || '—',
-        '', // TTD placeholder — gambar disisipkan di didDrawCell
+        b.title,
+        b.author || '—',
+        b.publisher || '—',
+        b.category || '—',
+        b.nomor_buku || '—',
+        b.rak || '—',
+        b.stock,
       ]);
 
       // 5. Render Tabel
@@ -372,7 +358,6 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
           textColor: [40, 40, 40],
           lineColor: [210, 220, 215],
           lineWidth: 0.1,
-          minCellHeight: 18, // FIX: cukup tinggi untuk memuat gambar TTD pengunjung
         },
         headStyles: {
           fillColor: [27, 67, 50],
@@ -386,33 +371,17 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 10 },
-          1: { cellWidth: 28 },
-          2: { cellWidth: 42 },
-          3: { cellWidth: 35 },
-          4: { cellWidth: 48 },
-          5: { cellWidth: 72 },
-          6: { cellWidth: 32, halign: 'center' },
+          1: { cellWidth: 70 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 40 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 40 },
+          6: { cellWidth: 20 },
+          7: { cellWidth: 15, halign: 'center' },
         },
         alternateRowStyles: { fillColor: [248, 250, 249] },
         margin: { left: margin, right: margin },
 
-        // FIX: Sisipkan gambar TTD pengunjung yang sudah tersimpan di database
-        didDrawCell: (data) => {
-          if (data.section === 'body' && data.column.index === 6 && data.row.index !== undefined) {
-            const entry = entries[data.row.index];
-            if (entry?.ttd_data) {
-              try {
-                const cellW = data.cell.width;
-                const cellH = data.cell.height;
-                const imgW = Math.min(cellW - 6, 26);
-                const imgH = Math.min(cellH - 4, 14);
-                const imgX = data.cell.x + (cellW - imgW) / 2;
-                const imgY = data.cell.y + (cellH - imgH) / 2;
-                doc.addImage(entry.ttd_data, 'PNG', imgX, imgY, imgW, imgH);
-              } catch (_) { /* skip jika TTD gagal dimuat */ }
-            }
-          }
-        },
         didDrawPage: (data) => {
           drawHeader(data.pageNumber === 1);
         },
@@ -439,7 +408,7 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
       doc.text(`Soppeng, ${tglFormal}`, signX + signWidth / 2, signY, { align: 'center' });
       doc.text('Petugas Perpustakaan,', signX + signWidth / 2, signY + 6, { align: 'center' });
 
-      // FIX: Tempel TTD petugas dari modal (sudah di-flatten ke background putih)
+      // Tempel TTD petugas dari modal
       if (ttdDataUrl) {
         try {
           doc.addImage(ttdDataUrl, 'PNG', signX + signWidth / 2 - 22, signY + 8, 44, 18);
@@ -475,7 +444,7 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
         doc.text('Perpustakaan Kejaksaan Negeri Soppeng', margin, pageH - 8);
       }
 
-      doc.save(`BukuTamu_KejariSoppeng_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`Katalog_Buku_KejariSoppeng_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Gagal membuat PDF:', error);
       alert('Terjadi kesalahan saat membuat PDF.');
@@ -487,21 +456,19 @@ export default function ExportBukuTamu({ entries }: { entries: BukuTamuEntry[] }
   return (
     <>
       <GlobalActionLoading isVisible={isExportingPDF} text="Mengekspor Laporan PDF..." />
-      <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-        {/* Tombol Excel */}
+      <div className="flex flex-col sm:flex-row items-center gap-2">
         <button
           onClick={handleExportExcel}
           disabled={isExportingPDF}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-white text-[#1B4332] border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white text-[#1B4332] border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
         >
           <span className="text-base">📊</span> Excel
         </button>
 
-        {/* Tombol PDF Resmi */}
         <button
           onClick={() => setShowSignModal(true)}
           disabled={isExportingPDF}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 bg-[#1B4332] hover:bg-[#143628] text-white border border-[#143628] rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md hover:shadow-emerald-900/20 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-[#1B4332] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-70 disabled:cursor-wait"
         >
           {isExportingPDF ? (
             <>

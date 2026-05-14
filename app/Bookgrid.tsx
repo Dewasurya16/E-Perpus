@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import QRCodeModal from './dashboard/QRCodeModal';
 import BorrowModal from './katalog/BorrowModal';
+import Link from 'next/link';
 
 // Field ringkasan diambil dari kolom `ringkasan` di tabel `books` Supabase.
 // Pastikan kolom tersebut sudah ada: ALTER TABLE books ADD COLUMN ringkasan text;
@@ -34,7 +35,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 function getCategoryColor(cat?: string) {
   const lower = (cat || '').toLowerCase();
-  return CATEGORY_COLORS[lower] || '#1B4332';
+  return CATEGORY_COLORS[lower] || 'var(--green-main)';
 }
 
 // ── Komponen bintang rating ───────────────────────────────────
@@ -60,13 +61,12 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
   const hasRingkasan = !!book.ringkasan;
 
   return (
-    <div className="group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden">
-      {/* Cover strip warna */}
+    <div className="reveal group bg-white rounded-[1.25rem] border border-slate-200 p-1 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
+      {/* Gradient top strip */}
       <div
-        className="h-2 w-full flex-shrink-0"
-        style={{ background: `linear-gradient(90deg, ${color}, ${color}99)` }}
+        className="h-[3px] w-full flex-shrink-0"
+        style={{ background: `linear-gradient(90deg, ${color}, ${color}80, transparent)` }}
       />
-
       <div className="p-4 flex flex-col flex-1 gap-3">
         {/* Category + stock */}
         <div className="flex items-start justify-between gap-2">
@@ -87,9 +87,11 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
 
         {/* Judul */}
         <div>
-          <h3 className="font-black text-slate-800 text-[13px] leading-snug line-clamp-2 group-hover:text-[#1B4332] transition-colors">
-            {book.title}
-          </h3>
+          <Link href={`/buku/${book.id}`} className="group-hover:underline decoration-[var(--green-main)] decoration-2 underline-offset-2">
+            <h3 className="font-black text-slate-800 text-[14px] leading-snug line-clamp-2 group-hover:text-[var(--green-main)] transition-colors">
+              {book.title}
+            </h3>
+          </Link>
           {book.author && (
             <p className="text-[10px] text-slate-400 font-semibold mt-1">oleh {book.author}</p>
           )}
@@ -134,7 +136,7 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
 
         {/* Action buttons */}
         <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-slate-50">
-          <QRCodeModal book={book} isLoggedIn={isLoggedIn} />
+          <QRCodeModal book={book} isLoggedIn={isLoggedIn} userEmail={userEmail} />
 
           {isLoggedIn && userEmail ? (
             <BorrowModal book={book} userEmail={userEmail} />

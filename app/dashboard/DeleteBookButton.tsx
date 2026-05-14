@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import GlobalActionLoading from "../components/GlobalActionLoading";
 
 export default function DeleteBookButton({ bookId, bookTitle }: { bookId: string; bookTitle: string }) {
   const router = useRouter();
@@ -41,12 +42,7 @@ export default function DeleteBookButton({ bookId, bookTitle }: { bookId: string
           <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
 
             {/* Loading overlay */}
-            {isDeleting && (
-              <div className="absolute inset-0 z-10 bg-white/80 rounded-[2rem] flex flex-col items-center justify-center gap-3">
-                <div style={{ width: 44, height: 44, border: '4px solid #fee2e2', borderTopColor: '#ef4444', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-                <p className="text-[11px] font-black text-red-400 uppercase tracking-widest">Menghapus...</p>
-              </div>
-            )}
+            <GlobalActionLoading isVisible={isDeleting} text="Menghapus Buku..." />
 
             <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl">🗑️</div>
             <h4 className="text-lg font-black text-slate-800 mb-2">Hapus Buku?</h4>

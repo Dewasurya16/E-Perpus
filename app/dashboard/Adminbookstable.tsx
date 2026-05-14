@@ -50,7 +50,7 @@ function SkeletonCard() {
 }
 
 // ── Book Card ──────────────────────────────────────────────────
-function BookCard({ book, index, page, perPage }: { book: Book; index: number; page: number; perPage: number }) {
+function BookCard({ book, index, page, perPage, userEmail = '' }: { book: Book; index: number; page: number; perPage: number; userEmail?: string }) {
   const globalNo = (page - 1) * perPage + index + 1;
   const stockOk  = book.stock > 0;
 
@@ -129,7 +129,7 @@ function BookCard({ book, index, page, perPage }: { book: Book; index: number; p
       <div className="px-4 pb-4 pt-0">
         <div className="border-t border-slate-100 pt-3 flex items-center gap-1.5">
           <div className="flex-1">
-            <QRCodeModal book={book} />
+            <QRCodeModal book={book} isLoggedIn={true} userEmail={userEmail} />
           </div>
           <EditBookModal book={book} />
           <DeleteBookButton bookId={book.id} bookTitle={book.title} />
@@ -139,7 +139,7 @@ function BookCard({ book, index, page, perPage }: { book: Book; index: number; p
   );
 }
 
-export default function AdminBooksTable({ books }: { books: Book[] }) {
+export default function AdminBooksTable({ books, userEmail = '' }: { books: Book[]; userEmail?: string }) {
   const [search,       setSearch]      = useState('');
   const [catFilter,    setCatFilter]   = useState('');
   const [page,         setPage]        = useState(1);
@@ -333,6 +333,7 @@ export default function AdminBooksTable({ books }: { books: Book[] }) {
                 index={i}
                 page={safePage}
                 perPage={ITEMS_PER_PAGE}
+                userEmail={userEmail}
               />
             ))
           }

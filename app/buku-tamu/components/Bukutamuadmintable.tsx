@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import ExportBukuTamu from './ExportBukuTamu';
+import GlobalActionLoading from '../../components/GlobalActionLoading';
 
 type BukuTamuEntry = {
   id: string;
@@ -102,6 +103,7 @@ function EntryCard({
 
   return (
     <>
+      <GlobalActionLoading isVisible={loading} text="Memproses Aksi..." />
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-3 relative overflow-hidden">
         <div className="absolute top-3 left-3 w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center">
           <span className="text-[9px] font-black text-slate-500 tabular-nums">

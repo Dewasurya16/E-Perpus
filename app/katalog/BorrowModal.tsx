@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
+import GlobalActionLoading from "../components/GlobalActionLoading";
 
 export default function BorrowModal({ book, userEmail }: { book: any; userEmail: string }) {
   const router = useRouter();
@@ -25,7 +26,9 @@ export default function BorrowModal({ book, userEmail }: { book: any; userEmail:
         .ilike('Email', `%${autoName}%`)
         .limit(1)
         .single();
-      if (data?.Nama) setStaffName(data.Nama);
+      if (data?.Nama) {
+        setStaffName(data.Nama);
+      }
     };
 
     if (autoName) fetchStaffName();
@@ -109,6 +112,7 @@ export default function BorrowModal({ book, userEmail }: { book: any; userEmail:
 
   return (
     <>
+      <GlobalActionLoading isVisible={isLoading} text="Memproses Peminjaman..." />
       <button
         onClick={(e) => {
           e.preventDefault();

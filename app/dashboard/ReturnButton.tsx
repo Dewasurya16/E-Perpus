@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import GlobalActionLoading from "../components/GlobalActionLoading";
 
 export default function ReturnButton({ loan }: { loan: any }) {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function ReturnButton({ loan }: { loan: any }) {
 
   return (
     <>
+      <GlobalActionLoading isVisible={isLoading} text="Memproses Pengembalian..." />
       {/* TOMBOL KEMBALIKAN DI TABEL */}
       <button
         onClick={(e) => {

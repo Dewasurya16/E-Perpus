@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import BorrowModal from "../katalog/BorrowModal";
 
-export default function QRCodeModal({ book, isLoggedIn = false }: { book: any, isLoggedIn?: boolean }) {
+export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '' }: { book: any, isLoggedIn?: boolean, userEmail?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -250,11 +251,10 @@ export default function QRCodeModal({ book, isLoggedIn = false }: { book: any, i
               <span className="text-sm">📖</span> Baca E-Book
             </a>
 
-            {isLoggedIn ? (
-              <Link href="/dashboard?tab=buku"
-                className="flex-1 text-center py-4 bg-[#1B4332] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#123023] transition-all shadow-md flex justify-center items-center gap-2">
-                <span className="text-sm">📚</span> Pinjam Fisik
-              </Link>
+            {isLoggedIn && userEmail ? (
+              <div className="flex-1">
+                <BorrowModal book={book} userEmail={userEmail} />
+              </div>
             ) : (
               <Link href="/login"
                 className="flex-1 text-center py-4 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md flex justify-center items-center gap-2">

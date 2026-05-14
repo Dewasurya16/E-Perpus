@@ -110,6 +110,12 @@ export default function MyHistory({ userEmail }: { userEmail: string }) {
   // ── SIMPAN ULASAN ──────────────────────────────────────────────────────
   const submitReview = async () => {
     if (isProcessing) return;
+    // Guard: jangan izinkan ulasan jika status sudah SUDAH DIULAS
+    if (normalizeStatus(ratingModal?.currentStatus) === 'SUDAH DIULAS') {
+      alert('Anda sudah memberikan ulasan untuk buku ini.');
+      setRatingModal(null);
+      return;
+    }
     setIsProcessing(true);
     try {
       const currentCount  = Number(ratingModal.currentCount)  || 0;
@@ -271,6 +277,7 @@ export default function MyHistory({ userEmail }: { userEmail: string }) {
                         title:         loan.books?.title,
                         currentRating: loan.books?.rating       || 0,
                         currentCount:  loan.books?.rating_count || 0,
+                        currentStatus: loan.status,
                       });
                     }}
                     className="px-4 py-2.5 bg-amber-400 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 shadow-sm transition-all active:scale-95"

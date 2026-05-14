@@ -1,32 +1,35 @@
-// middleware.ts  (di root project, sejajar dengan app/)
-// Tambahkan /buku ke daftar rute yang TIDAK memerlukan login
-
+// middleware.ts — root project
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Rute yang boleh diakses tanpa login
-const PUBLIC_PATHS = [
-  '/',
-  '/login',
-  '/register',
-  '/katalog',
-  '/buku',        // ← TAMBAHKAN INI (mencakup /buku/[id] juga)
-];
+// Rute publik (tanpa login)
+const PUBLIC_PATHS = ['/', '/login', '/register', '/buku-tamu', '/buku', '/katalog'];
+
+// Rute khusus admin
+const ADMIN_PATHS = ['/dashboard'];
+
+// /profil tidak perlu ditambahkan — otomatis terlindungi karena tidak ada di PUBLIC_PATHS
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Izinkan semua rute publik (termasuk sub-path seperti /buku/xxx)
+  // Izinkan semua public path (termasuk sub-path)
   const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   if (isPublic) return NextResponse.next();
 
-  // Cek session cookie
   const session = request.cookies.get('session')?.value;
+
+  // Tidak ada session → redirect ke login
   if (!session) {
-    // Simpan tujuan asal agar setelah login bisa redirect balik
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Cek proteksi admin: hanya role 'admin' yang boleh akses /dashboard
+  const isAdminPath = ADMIN_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
+  if (isAdminPath && session !== 'admin') {
+    return NextResponse.redirect(new URL('/katalog', request.url));
   }
 
   return NextResponse.next();
@@ -34,7 +37,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Jalankan middleware di semua halaman kecuali _next & file statis
-    '/((?!_next/static|_next/image|favicon.ico|logo-.*\\.png|.*\\.svg).*)',
+    // Jalankan di semua path kecuali asset statis & next internals
+    '/((?!_next/static|_next/image|favicon.ico|icon\\.png|logo-.*\\.png|images/.*|.*\\.svg|.*\\.webp|.*\\.jpg|.*\\.jpeg|.*\\.png).*)',
   ],
 };
