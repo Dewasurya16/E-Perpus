@@ -288,7 +288,7 @@ export default async function DashboardPage(props: any) {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {[
                     { label: 'Total Koleksi',   value: totalBooks,       icon: '📚', sub: `${outOfStock.length} stok habis`, trend: 'Update' },
-                    { label: 'Aktif Dipinjam',  value: activeLoans,      icon: '⏳', sub: `${overdueLoans.length} terlambat`, trend: overdueLoans > 0 ? 'Warning' : 'Aman' },
+                    { label: 'Aktif Dipinjam',  value: activeLoans,      icon: '⏳', sub: `${overdueLoans.length} terlambat`, trend: overdueLoans.length > 0 ? 'Warning' : 'Aman' },
                     { label: 'Tingkat Kembali', value: `${returnRate}%`, icon: '✅', sub: `${returnedLoans} total`, trend: 'Stabil' },
                     { label: 'Perlu ACC',        value: pendingUsers,     icon: '👥', sub: 'akun baru', trend: pendingUsers > 0 ? 'Action' : 'Aman' },
                   ].map((stat, i) => (
